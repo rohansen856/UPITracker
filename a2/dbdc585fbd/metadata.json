@@ -1,0 +1,23 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a2dbdc585fbd",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "README.md",
+    "assets/direction_model.json",
+    "assets/spam_model.json",
+    "assets/transactional_model.json",
+    "data/.gitkeep",
+    "data/README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a2/dbdc585fbd/0/metadata.json",
+      "transcript": "/a2/dbdc585fbd/0/full.jsonl",
+      "content_hash": "/a2/dbdc585fbd/0/content_hash.txt",
+      "prompt": "/a2/dbdc585fbd/0/prompt.txt"
+    }
+  ]
+}
