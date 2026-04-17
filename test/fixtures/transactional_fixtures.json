@@ -1,0 +1,79 @@
+{
+  "cases": [
+    {
+      "text": "Dear UPI user A/C X0587 debited by 500.00 on date 16Apr26 trf to SANDIP MANDAL Refno 300900907330 If not u? call-1800111109 for other services-18001234-SBI",
+      "label": "positive",
+      "probability": 0.9937534721966688
+    },
+    {
+      "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.200.00 on 16-04-26 transfer from DIVYANSHUSINGH Ref No 200038012233 -SBI",
+      "label": "positive",
+      "probability": 0.9952823973787368
+    },
+    {
+      "text": "Sent Rs.1200.00 From HDFC Bank A/C x1234 To AMAZON PAY On 10/04/26 Ref 204060010123",
+      "label": "positive",
+      "probability": 0.9370778830726205
+    },
+    {
+      "text": "You paid Rs 250 to Zomato via UPI. UPI transaction ID 604123456800. From your Google Pay account.",
+      "label": "positive",
+      "probability": 0.8448424178759952
+    },
+    {
+      "text": "ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.",
+      "label": "positive",
+      "probability": 0.8300119617232178
+    },
+    {
+      "text": "INR 450.00 debited A/c no. XX1234 11-04-26 18:45:22 UPI/P2A/604123456791/ZOMATO. Bal INR 23,456.78.",
+      "label": "positive",
+      "probability": 0.780461363349239
+    },
+    {
+      "text": "Paytm: Received Rs 2000 from Priya. UPI ID priya@paytm. Txn ID 123456789012",
+      "label": "positive",
+      "probability": 0.8261069168227596
+    },
+    {
+      "text": "Dear Customer, 478912 is your OTP for transaction of Rs 500 on HDFC card ending 1234. Do not share.",
+      "label": "negative",
+      "probability": 0.034306242132160436
+    },
+    {
+      "text": "Your A/c XX0587 balance is Rs 3,245.67 as on 12-04-26 17:00. -SBI",
+      "label": "negative",
+      "probability": 0.10796064919614211
+    },
+    {
+      "text": "Dear Cust, your HDFC CC ending 1234 bill of Rs 5,678 is due on 15-04-26. Pay now to avoid late fee.",
+      "label": "negative",
+      "probability": 0.030483624775359378
+    },
+    {
+      "text": "Dear Customer, your UPI payment of Rs 500 to merchant@upi on 10-04-26 FAILED. Any amount debited will be reversed in 3-5 days. -SBI",
+      "label": "negative",
+      "probability": 0.07744425108170659
+    },
+    {
+      "text": "Your transaction of Rs 250 on card XX1234 was DECLINED on 10-04-26. -HDFC",
+      "label": "negative",
+      "probability": 0.05959186852990108
+    },
+    {
+      "text": "Hey, can you pick up some milk on the way home?",
+      "label": "negative",
+      "probability": 0.012915295068008722
+    },
+    {
+      "text": "Meeting rescheduled to 4 PM tomorrow in conference room B.",
+      "label": "negative",
+      "probability": 0.017425340618502507
+    },
+    {
+      "text": "URGENT: Your KYC has expired. Update OTP at axis-secure.link now to avoid block",
+      "label": "negative",
+      "probability": 0.012956038572596041
+    }
+  ]
+}

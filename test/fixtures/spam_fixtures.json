@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "text": "Your account has been credited with a Rs 3,000 bonus, available for withdrawal within 24 hours. Click: cutt.ly/StGmXhY1 NowAssignedL1RBPDA",
+      "label": "positive",
+      "probability": 0.9895836880422347
+    },
+    {
+      "text": "CONGRATULATIONS! FREE 2GB data is yours! Claim on Airtel Thanks App Now. Hurry i.airtel.in/e/csl_ml_2GB",
+      "label": "positive",
+      "probability": 0.9942958758758608
+    },
+    {
+      "text": "You have won Rs 5,000 cashback. Click here to claim: http://win.example.com/claim",
+      "label": "positive",
+      "probability": 0.9990406078115601
+    },
+    {
+      "text": "URGENT: Your KYC has expired. Update OTP at axis-secure.link now to avoid block",
+      "label": "positive",
+      "probability": 0.9687912346222504
+    },
+    {
+      "text": "Flat 50% off on your next recharge. Use code SAVE50. Visit paytm.com/offer",
+      "label": "positive",
+      "probability": 0.9792250796254282
+    },
+    {
+      "text": "You are selected for a Rs 1 crore lottery. Send your bank details to claim@win.co",
+      "label": "positive",
+      "probability": 0.9891703241472192
+    },
+    {
+      "text": "A/C X0587 debited by Rs.50.00 on 11Apr26 trf to M S SURINDER KUM Refno 602560907627 If not u? call-1800111109 for other services-18001234-SBI",
+      "label": "negative",
+      "probability": 0.008971843827878344
+    },
+    {
+      "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.200.00 on 16-04-26 transfer from DIVYANSHUSINGH Ref No 200038012233 -SBI",
+      "label": "negative",
+      "probability": 0.013744829230398912
+    },
+    {
+      "text": "Sent Rs.1200.00 From HDFC Bank A/C x1234 To AMAZON PAY On 10/04/26 Ref 204060010123",
+      "label": "negative",
+      "probability": 0.03139042769786609
+    },
+    {
+      "text": "ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.",
+      "label": "negative",
+      "probability": 0.01619814813541624
+    },
+    {
+      "text": "You paid Rs 250 to Zomato via UPI. UPI transaction ID 604123456800. From your Google Pay account.",
+      "label": "negative",
+      "probability": 0.04554969682389621
+    },
+    {
+      "text": "Hey, can you pick up some milk on the way home?",
+      "label": "negative",
+      "probability": 0.011906693221587713
+    },
+    {
+      "text": "",
+      "label": "negative",
+      "probability": 0.0
+    }
+  ]
+}

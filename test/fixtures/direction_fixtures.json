@@ -1,0 +1,64 @@
+{
+  "cases": [
+    {
+      "text": "Dear UPI user A/C X0587 debited by 500.00 on date 16Apr26 trf to SANDIP MANDAL Refno 300900907330 If not u? call-1800111109 for other services-18001234-SBI",
+      "label": "negative",
+      "probability": 0.018045470098187032
+    },
+    {
+      "text": "Dear UPI user A/C X0587 debited by 20.00 on date 06Apr26 trf to Universal Grocer Refno 300264030291 If not u? call-1800111109 for other services-18001234-SBI",
+      "label": "negative",
+      "probability": 0.017053716631447353
+    },
+    {
+      "text": "Sent Rs.1200.00 From HDFC Bank A/C x1234 To AMAZON PAY On 10/04/26 Ref 204060010123",
+      "label": "negative",
+      "probability": 0.3772342584259685
+    },
+    {
+      "text": "ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.",
+      "label": "negative",
+      "probability": 0.45882592979355835
+    },
+    {
+      "text": "You paid Rs 250 to Zomato via UPI. UPI transaction ID 604123456800.",
+      "label": "negative",
+      "probability": 0.334953892092001
+    },
+    {
+      "text": "Paytm: Paid Rs 350 to Blinkit via UPI. Order ID OID0987654321",
+      "label": "negative",
+      "probability": 0.30608826745572165
+    },
+    {
+      "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.200.00 on 16-04-26 transfer from DIVYANSHUSINGH Ref No 200038012233 -SBI",
+      "label": "positive",
+      "probability": 0.9878730764249437
+    },
+    {
+      "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.80.00 on 16-04-26 transfer from Sayan  Chakraborty Ref No 610696958019 -SBI",
+      "label": "positive",
+      "probability": 0.9848579693725817
+    },
+    {
+      "text": "You've received Rs 5000.00 in HDFC Bank A/c XX1234 via UPI from SURESH KUMAR on 10-Apr-26 Ref 204060010124",
+      "label": "positive",
+      "probability": 0.9137500594715686
+    },
+    {
+      "text": "You received Rs 500 from Rahul Sharma. Google Pay. UPI Ref: 604123456802",
+      "label": "positive",
+      "probability": 0.912515458110614
+    },
+    {
+      "text": "Paytm: Received Rs 2000 from Priya. UPI ID priya@paytm. Txn ID 123456789012",
+      "label": "positive",
+      "probability": 0.9254562469719874
+    },
+    {
+      "text": "NEFT credit of Rs.25000 received in your A/c XX1234 on 10-04-26 from RAKESH KUMAR, State Bank of India. Ref N123456789012.",
+      "label": "positive",
+      "probability": 0.9265768236683309
+    }
+  ]
+}
