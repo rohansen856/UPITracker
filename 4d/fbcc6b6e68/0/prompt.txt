@@ -1,0 +1,96 @@
+in the current project, i want you to create a application that can read my phone's live notifications and messages and all. the main problem is: people use multiple upi apps to pay (like gpay, paytm, phonepe etc.) but there is no unified record of spending and receieving. i want a a place that keeps this record by reading the messages, notifications etc. comes to my phone after paying tjrough any app. also make sure no duplicate entries are getting in (like you may get notification and message for the same payment but both should not be entered as duplicate). also uuse env vars for things like db creds and all. seed the db properly with new tables as needed. make it offline first, so that even if there is no internet, it can keep the records and sync later with the db. keep all records possible of the payment like value, other receipt details, tags (if possible), location (if possible), editable note by me, also implement things like filters, total spending, total receieved etc. use a unified theme and professional look. use proper local storage and permission info in the app.
+
+---
+
+@/home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/terminals/4.txt:7-28
+
+---
+
+install the app on my phone
+
+---
+
+[Image]
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-cb9d73f2-ed2e-49ac-9b57-f6f6a408ae7e.png
+2. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-d44ba97a-80ca-477d-b58d-fe2860a5b6e0.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+this is not working. i can receieve messages like this can you properly catch those? write tests to check if its actually working (maybe send messages yourself and try to capture them to be sure it works etc.)
+
+---
+
+hen i tap scan sms history:
+@/home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/terminals/3.txt:81-140
+
+---
+
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-a332b2a6-c2f4-4e95-bdaf-d4e3a015461b.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+in the main page there is no need for such a big "UPI Tracker" text. also convert to light mode
+
+---
+
+add an option in the settings: to give the user an option to set a start date from which the app can start capturing/loading data. like if the date is set to 10th april, the app should not load any transaction data before 10th april (from message sync etc.)
+
+---
+
+i deleted all the records from db myself, but when i tap on sync now, it says synced. solve this. maybe just try to compare the last and first db entry to the last and first transaction and if its there then its all synced.
+
+---
+
+if the sync is already in progress, show a sync loader in the sync now, also the sync logo in the homepage should rotate similarly
+
+---
+
+now create a proper mobile widget for this app (android) where the widget takes full screen width and shows today's spending. also in the homepage remove the "Spending by app" section and keep a slim outlined box section that show's today's spent vs receieved
+
+---
+
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-62809b18-e0f9-409c-8da9-05bc6b799c37.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+in the analytics section, its showing so much old data though i have set the start date for data capture to 10th april
+
+---
+
+write rigorous tests for all of these. unit and integration
+
+---
+
+continue
+
+---
+
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-8804a195-bc83-4896-83af-365d854dfa05.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+its detecting spam messages and getting faulty balances from there. so decide the best strategy to build a llightweight spam filter ml model to filter the chats before processing. some dataset are given in data/ folder. you may download and use more datasets if you want. if you need to, clean, merge, use the datasets anyway you want for the best possible outcome and accuracy. like in a production environment set a confidence threshold if necessary and integrate the ml model in-app
+
+---
+
+update the readme with relevant info. also see the data/ directory as i have added significant data and mainly data related to upi payment. you may modifty the structure of the data and/or chreate more ml models that stack on top of each other to get towards more accurate results for the app
+
+---
+
+add/update any necessaty tests, check the accuracy and working of the present ml models and the app, also update readme accordingly. assume that the datasets would be avaiable in a google drive folder for people to download and keep in data/folder (probably have a gitkeep there).

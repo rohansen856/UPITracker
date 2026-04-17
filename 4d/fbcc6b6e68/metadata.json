@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "4dfbcc6b6e68",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "test/accuracy/corpus_accuracy_test.dart",
+    "test/accuracy/model_consistency_test.dart",
+    "test/fixtures/direction_fixtures.json",
+    "test/fixtures/spam_fixtures.json",
+    "test/fixtures/transactional_fixtures.json",
+    "test/integration/message_pipeline_integration_test.dart",
+    "test/services/ml/direction_classifier_test.dart",
+    "test/services/ml/message_pipeline_test.dart",
+    "test/services/ml/spam_filter_test.dart",
+    "test/services/ml/tfidf_logreg_test.dart",
+    "test/services/ml/transactional_classifier_test.dart"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4d/fbcc6b6e68/0/metadata.json",
+      "transcript": "/4d/fbcc6b6e68/0/full.jsonl",
+      "content_hash": "/4d/fbcc6b6e68/0/content_hash.txt",
+      "prompt": "/4d/fbcc6b6e68/0/prompt.txt"
+    }
+  ]
+}
