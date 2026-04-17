@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "5c45b9358ae6",
+  "session_id": "804d9086-7f1f-4e6b-8057-70da1186893c",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T05:25:09.795294267Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "pubspec.yaml",
+    "scripts/generate_ml_fixtures.py",
+    "scripts/ml_core.py",
+    "scripts/train_all_models.py"
+  ],
+  "agent": "Cursor",
+  "model": "claude-opus-4-7",
+  "turn_id": "b7bf2d85e738",
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T05:25:09.793814143Z",
+    "agent_lines": 704,
+    "agent_removed": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 704,
+    "total_lines_changed": 705,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
