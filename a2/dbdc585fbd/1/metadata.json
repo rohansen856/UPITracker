@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a2dbdc585fbd",
+  "session_id": "804d9086-7f1f-4e6b-8057-70da1186893c",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T05:27:40.018598623Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "README.md",
+    "assets/direction_model.json",
+    "assets/spam_model.json",
+    "assets/transactional_model.json",
+    "data/.gitkeep",
+    "data/README.md"
+  ],
+  "agent": "Cursor",
+  "model": "claude-opus-4-7",
+  "turn_id": "b7bf2d85e738",
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T05:27:40.018328768Z",
+    "agent_lines": 390,
+    "agent_removed": 63,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 390,
+    "total_lines_changed": 453,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
