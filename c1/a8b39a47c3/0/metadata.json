@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "c1a8b39a47c3",
+  "session_id": "804d9086-7f1f-4e6b-8057-70da1186893c",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T05:26:01.951898683Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "lib/providers/transaction_provider.dart",
+    "lib/services/ml/classifiers.dart",
+    "lib/services/ml/message_pipeline.dart",
+    "lib/services/ml/tfidf_logreg.dart"
+  ],
+  "agent": "Cursor",
+  "model": "claude-opus-4-7",
+  "turn_id": "b7bf2d85e738",
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T05:26:01.951699125Z",
+    "agent_lines": 456,
+    "agent_removed": 6,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 456,
+    "total_lines_changed": 462,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
