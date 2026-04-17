@@ -12,6 +12,7 @@ import '../services/notification_service.dart';
 import '../services/sms_service.dart';
 import '../services/sync_service.dart';
 import '../services/location_service.dart';
+import '../services/ml/message_pipeline.dart';
 
 class TransactionProvider extends ChangeNotifier {
   static const _startDateKey = 'tracking_start_date';
@@ -77,6 +78,9 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _loadStartDate();
+    // Load the stacked classifier weights in parallel with first DB reads.
+    // Failures are swallowed inside MessagePipeline (fail-open).
+    unawaited(MessagePipeline.instance.load());
     await loadTransactions();
     await loadSummary();
     _syncService.startPeriodicSync();
@@ -120,13 +124,33 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> _handleNotification(Map<String, dynamic> data) async {
+    final title = data['title'] as String? ?? '';
+    final text = data['text'] as String? ?? '';
+    final pkg = data['package'] as String? ?? '';
+
+    // Stacked classifier gate: spam → non-transactional → direction-check.
+    // Fail-open on each layer: a missing model must never drop real messages.
+    final decision = MessagePipeline.instance.evaluate('$title $text');
+    if (!decision.shouldIngest) {
+      debugPrint('[pipeline] drop notification:$pkg at ${decision.stage} — ${decision.reason}');
+      return;
+    }
+
     final parsed = UpiParser.parseNotification(
-      packageName: data['package'] as String? ?? '',
-      title: data['title'] as String? ?? '',
-      text: data['text'] as String? ?? '',
+      packageName: pkg,
+      title: title,
+      text: text,
     );
 
     if (!parsed.isValid) return;
+
+    if (decision.disagreesWithParser(parsed.type)) {
+      debugPrint(
+        '[pipeline] direction mismatch on notification:$pkg — '
+        'parser=${parsed.type} model=${decision.directionHint} '
+        '(p_credit=${decision.creditProbability?.toStringAsFixed(3)})',
+      );
+    }
 
     final timestamp = DateTime.fromMillisecondsSinceEpoch(
       (data['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
@@ -137,14 +161,29 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> _handleSms(Map<String, dynamic> data) async {
     final body = data['body'] as String? ?? '';
+    final sender = data['sender'] as String? ?? '';
     if (!UpiParser.isUpiRelated(body)) return;
 
+    final decision = MessagePipeline.instance.evaluate(body);
+    if (!decision.shouldIngest) {
+      debugPrint('[pipeline] drop sms:$sender at ${decision.stage} — ${decision.reason}');
+      return;
+    }
+
     final parsed = UpiParser.parseSms(
-      sender: data['sender'] as String? ?? '',
+      sender: sender,
       body: body,
     );
 
     if (!parsed.isValid) return;
+
+    if (decision.disagreesWithParser(parsed.type)) {
+      debugPrint(
+        '[pipeline] direction mismatch on sms:$sender — '
+        'parser=${parsed.type} model=${decision.directionHint} '
+        '(p_credit=${decision.creditProbability?.toStringAsFixed(3)})',
+      );
+    }
 
     final timestamp = DateTime.fromMillisecondsSinceEpoch(
       (data['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
@@ -201,12 +240,25 @@ class TransactionProvider extends ChangeNotifier {
       final messages = await _smsService.readSmsHistory(limit: 500);
       int added = 0;
 
+      int skippedSpam = 0;
+      int skippedNonTx = 0;
       for (final msg in messages) {
         final body = msg['body'] as String? ?? '';
+        final sender = msg['sender'] as String? ?? '';
         if (!UpiParser.isUpiRelated(body)) continue;
 
+        final decision = MessagePipeline.instance.evaluate(body);
+        if (!decision.shouldIngest) {
+          if (decision.stage == 'spam') {
+            skippedSpam++;
+          } else {
+            skippedNonTx++;
+          }
+          continue;
+        }
+
         final parsed = UpiParser.parseSms(
-          sender: msg['sender'] as String? ?? '',
+          sender: sender,
           body: body,
         );
 
@@ -246,7 +298,11 @@ class TransactionProvider extends ChangeNotifier {
 
       await loadTransactions();
       await loadSummary();
-      _error = added > 0 ? 'Found $added new transactions from SMS' : 'No new transactions found';
+      final parts = <String>[];
+      if (added > 0) parts.add('Found $added new transactions');
+      if (skippedSpam > 0) parts.add('filtered $skippedSpam spam');
+      if (skippedNonTx > 0) parts.add('skipped $skippedNonTx non-transactional');
+      _error = parts.isEmpty ? 'No new transactions found' : parts.join(' • ');
     } catch (e) {
       _error = 'SMS scan failed: $e';
     } finally {
