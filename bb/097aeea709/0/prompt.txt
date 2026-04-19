@@ -1,0 +1,5 @@
+in the application today bar for showing today's transactions does not work and the widget is not working. also in the homepage recent section there should be all the payment records for past 24hrs. make the header section better and in the widget section make it moe beautiful (like showing a bg colored graph or 10% less than yesterday etc.)
+
+---
+
+in the application today bar for showing today's transactions does not work and the widget is not working. also in the homepage recent section there should be all the payment records for past 24hrs. make the header section better and in the widget section make it moe beautiful (like showing a bg colored graph or 10% less than yesterday etc.)

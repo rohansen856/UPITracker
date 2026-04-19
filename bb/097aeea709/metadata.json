@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "bb097aeea709",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt",
+    "android/app/src/main/res/drawable/widget_background.xml",
+    "android/app/src/main/res/drawable/widget_chip_bg.xml",
+    "android/app/src/main/res/drawable/widget_chip_down.xml",
+    "android/app/src/main/res/drawable/widget_chip_neutral.xml",
+    "android/app/src/main/res/drawable/widget_chip_up.xml",
+    "android/app/src/main/res/layout/spending_widget_layout.xml",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/res/xml/spending_widget_info.xml",
+    "lib/providers/transaction_provider.dart",
+    "lib/screens/dashboard_screen.dart"
+  ],
+  "sessions": [
+    {
+      "metadata": "/bb/097aeea709/0/metadata.json",
+      "transcript": "/bb/097aeea709/0/full.jsonl",
+      "content_hash": "/bb/097aeea709/0/content_hash.txt",
+      "prompt": "/bb/097aeea709/0/prompt.txt"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "bb097aeea709",
+  "session_id": "029b4b73-5ca9-47ed-884b-8063b53e82aa",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-19T16:09:59.815674498Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt",
+    "android/app/src/main/res/drawable/widget_background.xml",
+    "android/app/src/main/res/drawable/widget_chip_bg.xml",
+    "android/app/src/main/res/drawable/widget_chip_down.xml",
+    "android/app/src/main/res/drawable/widget_chip_neutral.xml",
+    "android/app/src/main/res/drawable/widget_chip_up.xml",
+    "android/app/src/main/res/layout/spending_widget_layout.xml",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/res/xml/spending_widget_info.xml",
+    "lib/providers/transaction_provider.dart",
+    "lib/screens/dashboard_screen.dart"
+  ],
+  "agent": "Cursor",
+  "model": "claude-opus-4-7",
+  "turn_id": "52a913d1056c",
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-19T16:09:59.812451507Z",
+    "agent_lines": 781,
+    "agent_removed": 177,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 781,
+    "total_lines_changed": 958,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 781,
+      "agent_lines_removed": 177
+    }
+  ]
+}
