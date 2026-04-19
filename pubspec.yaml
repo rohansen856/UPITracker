@@ -42,3 +42,4 @@ flutter:
     - assets/spam_model.json
     - assets/transactional_model.json
     - assets/direction_model.json
+    - assets/branding/app_icon.png

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/debt_entry.dart';
 import '../providers/debt_provider.dart';
+import '../widgets/brand_logo.dart';
 
 /// Top-level screen for tracking money the user has lent or borrowed.
 ///
@@ -44,6 +45,11 @@ class _DebtsScreenState extends State<DebtsScreen> with SingleTickerProviderStat
 
     return Scaffold(
       appBar: AppBar(
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+          child: BrandLogo(size: 32),
+        ),
+        leadingWidth: 52,
         title: const Text('Debts & Lending'),
         bottom: TabBar(
           controller: _tabs,

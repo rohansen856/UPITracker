@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm cream tuned to the wallet icon's orange body so the icon reads well
+         inside any mask shape (circle, squircle, rounded-square). -->
+    <color name="ic_launcher_background">#FFFAF4</color>
+</resources>

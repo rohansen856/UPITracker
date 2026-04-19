@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/transaction_provider.dart';
+import '../widgets/brand_logo.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/filter_sheet.dart';
 import 'transaction_detail_screen.dart';
@@ -72,6 +73,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+          child: BrandLogo(size: 32),
+        ),
+        leadingWidth: 52,
         title: _showSearch
             ? TextField(
                 controller: _searchController,

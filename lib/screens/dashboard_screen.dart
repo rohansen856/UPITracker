@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/transaction_provider.dart';
+import '../widgets/brand_logo.dart';
 import '../widgets/transaction_card.dart';
 import 'transaction_detail_screen.dart';
 
@@ -53,6 +54,11 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
+              leading: const Padding(
+                padding: EdgeInsets.only(left: 12, top: 8, bottom: 8),
+                child: BrandLogo(size: 32),
+              ),
+              leadingWidth: 52,
               title: const Text('UPI Tracker'),
               pinned: true,
               actions: [
@@ -105,12 +111,6 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                       spark: provider.last7dSpending,
                       txnCount: provider.last24hCount,
                     ),
-                    const SizedBox(height: 14),
-                    _TotalsRow(
-                      totalSpent: provider.summary['total_spent'] ?? 0,
-                      totalReceived: provider.summary['total_received'] ?? 0,
-                      net: provider.summary['net'] ?? 0,
-                    ),
                     const SizedBox(height: 22),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,7 +141,10 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     children: [
-                      Icon(Icons.receipt_long_outlined, size: 64, color: cs.outlineVariant),
+                      Opacity(
+                        opacity: 0.7,
+                        child: BrandLogo(size: 72, padding: 10),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'No payments in the last 24 hours',
@@ -452,114 +455,3 @@ class _Bar extends StatelessWidget {
   }
 }
 
-/// Compact overall Spent / Received / Net row — shown below the hero card.
-class _TotalsRow extends StatelessWidget {
-  final double totalSpent;
-  final double totalReceived;
-  final double net;
-  const _TotalsRow({
-    required this.totalSpent,
-    required this.totalReceived,
-    required this.net,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final fmt = NumberFormat('#,##,###.##');
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        children: [
-          _TotalsCell(
-            label: 'Spent',
-            value: '₹${fmt.format(totalSpent)}',
-            color: AppTheme.debitColor,
-            icon: Icons.arrow_upward_rounded,
-          ),
-          _VerticalDivider(color: cs.outlineVariant),
-          _TotalsCell(
-            label: 'Received',
-            value: '₹${fmt.format(totalReceived)}',
-            color: AppTheme.creditColor,
-            icon: Icons.arrow_downward_rounded,
-          ),
-          _VerticalDivider(color: cs.outlineVariant),
-          _TotalsCell(
-            label: 'Net',
-            value: '₹${fmt.format(net.abs())}',
-            color: net >= 0 ? AppTheme.creditColor : AppTheme.debitColor,
-            icon: net >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TotalsCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final IconData icon;
-  const _TotalsCell({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 12, color: color),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VerticalDivider extends StatelessWidget {
-  final Color color;
-  const _VerticalDivider({required this.color});
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 42, color: color.withValues(alpha: 0.5));
-  }
-}
