@@ -1,5 +1,9 @@
-in the application today bar for showing today's transactions does not work and the widget is not working. also in the homepage recent section there should be all the payment records for past 24hrs. make the header section better and in the widget section make it moe beautiful (like showing a bg colored graph or 10% less than yesterday etc.)
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-cbbd0a41-e2e7-4ee6-becb-954c6a13bb96.png
 
----
+These images can be copied for use in other locations.
+</image_files>
 
-in the application today bar for showing today's transactions does not work and the widget is not working. also in the homepage recent section there should be all the payment records for past 24hrs. make the header section better and in the widget section make it moe beautiful (like showing a bg colored graph or 10% less than yesterday etc.)
+the widget still shows can't load widget. also instead of the analytics page, convert it to a page for keeping record of my debt and lent money. have total ammount of money i owe and i have to give, total money per person, reason for each entry of debt/owe etc. move the overview and week/month/3 months/year section to the transactions page, no need for the graphs.
