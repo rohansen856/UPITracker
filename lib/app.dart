@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/transactions_screen.dart';
-import 'screens/analytics_screen.dart';
+import 'screens/debts_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/transactions_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -17,7 +17,7 @@ class _AppShellState extends State<AppShell> {
   static final _screens = [
     const DashboardScreen(),
     const TransactionsScreen(),
-    const AnalyticsScreen(),
+    const DebtsScreen(),
     const SettingsScreen(),
   ];
 
@@ -43,9 +43,9 @@ class _AppShellState extends State<AppShell> {
             label: 'Transactions',
           ),
           NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
-            label: 'Analytics',
+            icon: Icon(Icons.handshake_outlined),
+            selectedIcon: Icon(Icons.handshake),
+            label: 'Debts',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

@@ -14,6 +14,7 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
+import android.util.Log
 import android.widget.RemoteViews
 import org.json.JSONArray
 import java.text.NumberFormat
@@ -28,10 +29,16 @@ import kotlin.math.roundToInt
  * Flutter through the `updateWidget` method channel. Reading from
  * SharedPreferences (rather than re-opening SQLite in a BroadcastReceiver) is
  * what lets the widget actually load on the launcher.
+ *
+ * Every code path that touches external state (prefs, bitmap allocation,
+ * resource lookup) is wrapped so that a malformed payload or an OOM during
+ * bitmap creation can never leave the user with a "Can't load widget" banner.
+ * The worst case is a plain "—" card; the widget still renders.
  */
 class SpendingWidgetProvider : AppWidgetProvider() {
 
     companion object {
+        private const val TAG = "SpendingWidget"
         private const val PREFS = "receipt_widget"
         private const val KEY_SPENT_24H = "spent24h"
         private const val KEY_RECEIVED_24H = "received24h"
@@ -48,35 +55,57 @@ class SpendingWidgetProvider : AppWidgetProvider() {
          * `TransactionProvider._refreshWidget`.
          */
         fun saveSnapshot(context: Context, payload: Any?) {
-            val map = payload as? Map<*, *> ?: return
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            try {
+                val map = payload as? Map<*, *> ?: return
+                val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
 
-            prefs.putFloat(KEY_SPENT_24H, (map["spent24h"] as? Number)?.toFloat() ?: 0f)
-            prefs.putFloat(KEY_RECEIVED_24H, (map["received24h"] as? Number)?.toFloat() ?: 0f)
-            prefs.putFloat(KEY_SPENT_PREV_24H, (map["spentPrev24h"] as? Number)?.toFloat() ?: 0f)
+                prefs.putFloat(KEY_SPENT_24H, (map["spent24h"] as? Number)?.toFloat() ?: 0f)
+                prefs.putFloat(KEY_RECEIVED_24H, (map["received24h"] as? Number)?.toFloat() ?: 0f)
+                prefs.putFloat(KEY_SPENT_PREV_24H, (map["spentPrev24h"] as? Number)?.toFloat() ?: 0f)
 
-            val delta = map["deltaPct"] as? Number
-            prefs.putBoolean(KEY_HAS_DELTA, delta != null)
-            prefs.putFloat(KEY_DELTA_PCT, delta?.toFloat() ?: 0f)
+                val delta = map["deltaPct"] as? Number
+                prefs.putBoolean(KEY_HAS_DELTA, delta != null)
+                prefs.putFloat(KEY_DELTA_PCT, delta?.toFloat() ?: 0f)
 
-            prefs.putInt(KEY_COUNT, (map["count24h"] as? Number)?.toInt() ?: 0)
+                prefs.putInt(KEY_COUNT, (map["count24h"] as? Number)?.toInt() ?: 0)
 
-            val spark = (map["spark7d"] as? List<*>)
-                ?.mapNotNull { (it as? Number)?.toDouble() }
-                ?: emptyList()
-            prefs.putString(KEY_SPARK, JSONArray(spark).toString())
+                val spark = (map["spark7d"] as? List<*>)
+                    ?.mapNotNull { (it as? Number)?.toDouble() }
+                    ?: emptyList()
+                prefs.putString(KEY_SPARK, JSONArray(spark).toString())
 
-            prefs.putLong(
-                KEY_UPDATED_AT,
-                (map["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
-            )
-            prefs.apply()
+                prefs.putLong(
+                    KEY_UPDATED_AT,
+                    (map["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                )
+                prefs.apply()
+            } catch (t: Throwable) {
+                Log.w(TAG, "saveSnapshot failed", t)
+            }
         }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Push a first render immediately so the launcher doesn't sit on a
+        // stale placeholder while it waits for the next broadcast.
+        val mgr = AppWidgetManager.getInstance(context)
+        val ids = mgr.getAppWidgetIds(ComponentName(context, SpendingWidgetProvider::class.java))
+        onUpdate(context, mgr, ids)
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (id in appWidgetIds) {
-            updateWidget(context, appWidgetManager, id)
+            try {
+                renderWidget(context, appWidgetManager, id)
+            } catch (t: Throwable) {
+                Log.w(TAG, "render failed, falling back to minimal view", t)
+                try {
+                    appWidgetManager.updateAppWidget(id, buildFallback(context))
+                } catch (inner: Throwable) {
+                    Log.e(TAG, "fallback render also failed", inner)
+                }
+            }
         }
     }
 
@@ -89,7 +118,7 @@ class SpendingWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
+    private fun renderWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val snapshot = readSnapshot(context)
         val views = RemoteViews(context.packageName, R.layout.spending_widget_layout)
 
@@ -111,9 +140,9 @@ class SpendingWidgetProvider : AppWidgetProvider() {
             val isFlat = abs(pct) < 0.5
             val isUp = pct > 0
             val label = when {
-                isFlat -> "≈ flat vs yesterday"
-                isUp -> "▲ +${pct.roundToInt()}% vs yesterday"
-                else -> "▼ ${pct.roundToInt()}% vs yesterday"
+                isFlat -> "flat vs yesterday"
+                isUp -> "+${pct.roundToInt()}% vs yesterday"
+                else -> "${pct.roundToInt()}% vs yesterday"
             }
             views.setTextViewText(R.id.widget_trend, label)
             val (fg, bgRes) = when {
@@ -124,50 +153,73 @@ class SpendingWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_trend, fg)
             views.setInt(R.id.widget_trend, "setBackgroundResource", bgRes)
         } else {
-            views.setTextViewText(R.id.widget_trend, "tracking started")
+            views.setTextViewText(R.id.widget_trend, "tracking")
             views.setTextColor(R.id.widget_trend, Color.parseColor("#546E7A"))
             views.setInt(R.id.widget_trend, "setBackgroundResource", R.drawable.widget_chip_neutral)
         }
 
-        // Sparkline: build a bitmap because RemoteViews has no way to set per-bar
-        // heights on API < 31 otherwise.
-        val bars = if (snapshot.spark.isEmpty()) List(7) { 0.0 } else snapshot.spark
-        val sparkBmp = drawSparkline(context, bars)
-        views.setImageViewBitmap(R.id.widget_spark, sparkBmp)
-
-        // Tap opens the app.
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        if (launchIntent != null) {
-            val pending = PendingIntent.getActivity(
-                context,
-                0,
-                launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_root, pending)
+        // Sparkline: build a bitmap because RemoteViews has no way to set
+        // per-bar heights on API < 31 otherwise. If bitmap allocation fails we
+        // silently leave the ImageView empty — the card is still usable.
+        try {
+            val bars = if (snapshot.spark.isEmpty()) List(7) { 0.0 } else snapshot.spark
+            val sparkBmp = drawSparkline(context, bars)
+            views.setImageViewBitmap(R.id.widget_spark, sparkBmp)
+        } catch (t: Throwable) {
+            Log.w(TAG, "sparkline draw failed", t)
         }
 
+        views.setOnClickPendingIntent(R.id.widget_root, launchAppIntent(context))
         manager.updateAppWidget(widgetId, views)
     }
 
-    private fun readSnapshot(context: Context): Snapshot {
-        val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val sparkJson = prefs.getString(KEY_SPARK, "[]") ?: "[]"
-        val spark = runCatching {
-            val arr = JSONArray(sparkJson)
-            List(arr.length()) { arr.optDouble(it, 0.0) }
-        }.getOrDefault(emptyList())
+    /** Minimal, allocation-free RemoteViews shown only when the full renderer throws. */
+    private fun buildFallback(context: Context): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.spending_widget_layout)
+        views.setTextViewText(R.id.widget_subtitle, "Last 24 hours")
+        views.setTextViewText(R.id.widget_date, SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date()))
+        views.setTextViewText(R.id.widget_spent, "—")
+        views.setTextViewText(R.id.widget_received, "tap to open")
+        views.setTextViewText(R.id.widget_count, "")
+        views.setTextViewText(R.id.widget_trend, "")
+        views.setOnClickPendingIntent(R.id.widget_root, launchAppIntent(context))
+        return views
+    }
 
-        return Snapshot(
-            spent = prefs.getFloat(KEY_SPENT_24H, 0f).toDouble(),
-            received = prefs.getFloat(KEY_RECEIVED_24H, 0f).toDouble(),
-            spentPrev = prefs.getFloat(KEY_SPENT_PREV_24H, 0f).toDouble(),
-            hasDelta = prefs.getBoolean(KEY_HAS_DELTA, false),
-            deltaPct = prefs.getFloat(KEY_DELTA_PCT, 0f).toDouble(),
-            count = prefs.getInt(KEY_COUNT, 0),
-            spark = spark,
-            updatedAt = prefs.getLong(KEY_UPDATED_AT, 0L),
+    private fun launchAppIntent(context: Context): PendingIntent? {
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: return null
+        return PendingIntent.getActivity(
+            context,
+            0,
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    private fun readSnapshot(context: Context): Snapshot {
+        return try {
+            val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val sparkJson = prefs.getString(KEY_SPARK, "[]") ?: "[]"
+            val spark = runCatching {
+                val arr = JSONArray(sparkJson)
+                List(arr.length()) { arr.optDouble(it, 0.0) }
+            }.getOrDefault(emptyList())
+
+            Snapshot(
+                spent = prefs.getFloat(KEY_SPENT_24H, 0f).toDouble(),
+                received = prefs.getFloat(KEY_RECEIVED_24H, 0f).toDouble(),
+                spentPrev = prefs.getFloat(KEY_SPENT_PREV_24H, 0f).toDouble(),
+                hasDelta = prefs.getBoolean(KEY_HAS_DELTA, false),
+                deltaPct = prefs.getFloat(KEY_DELTA_PCT, 0f).toDouble(),
+                count = prefs.getInt(KEY_COUNT, 0),
+                spark = spark,
+                updatedAt = prefs.getLong(KEY_UPDATED_AT, 0L),
+            )
+        } catch (t: Throwable) {
+            Log.w(TAG, "readSnapshot failed", t)
+            Snapshot()
+        }
     }
 
     /**
@@ -175,9 +227,10 @@ class SpendingWidgetProvider : AppWidgetProvider() {
      * bar. Returns a bitmap sized to comfortably fill the widget's spark slot.
      */
     private fun drawSparkline(context: Context, values: List<Double>): Bitmap {
-        val density = context.resources.displayMetrics.density
-        val w = (280 * density).roundToInt()
-        val h = (52 * density).roundToInt()
+        val density = context.resources.displayMetrics.density.coerceAtLeast(1f)
+        // Cap size so we stay well under the IPC/bundle limit on older launchers.
+        val w = (240 * density).roundToInt().coerceAtMost(720)
+        val h = (48 * density).roundToInt().coerceAtMost(160)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
 
@@ -206,10 +259,6 @@ class SpendingWidgetProvider : AppWidgetProvider() {
 
             c.drawRoundRect(RectF(left, top, right, bottom), radius, radius, paint)
         }
-
-        paint.shader = null
-        paint.color = Color.parseColor("#1FFFFFFF")
-        c.drawRect(0f, baseline, w.toFloat(), baseline + 1f, paint)
 
         return bmp
     }

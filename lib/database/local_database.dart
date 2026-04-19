@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../models/debt_entry.dart';
 import '../models/transaction_record.dart';
 
 class LocalDatabase {
@@ -20,12 +21,24 @@ class LocalDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    await _createTransactionsTable(db);
+    await _createDebtsTable(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createDebtsTable(db);
+    }
+  }
+
+  Future<void> _createTransactionsTable(Database db) async {
     await db.execute('''
       CREATE TABLE transactions (
         id TEXT PRIMARY KEY,
@@ -57,6 +70,27 @@ class LocalDatabase {
     await db.execute('CREATE INDEX idx_date ON transactions(transaction_date)');
     await db.execute('CREATE INDEX idx_synced ON transactions(synced)');
     await db.execute('CREATE INDEX idx_type ON transactions(transaction_type)');
+  }
+
+  Future<void> _createDebtsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE debts (
+        id TEXT PRIMARY KEY,
+        direction TEXT NOT NULL,
+        counterparty TEXT NOT NULL,
+        amount REAL NOT NULL,
+        reason TEXT,
+        note TEXT,
+        created_at TEXT NOT NULL,
+        due_date TEXT,
+        settled INTEGER DEFAULT 0,
+        settled_at TEXT,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_debts_counterparty ON debts(counterparty)');
+    await db.execute('CREATE INDEX idx_debts_direction ON debts(direction)');
+    await db.execute('CREATE INDEX idx_debts_settled ON debts(settled)');
   }
 
   Future<int> insertTransaction(TransactionRecord record) async {
@@ -278,5 +312,46 @@ class LocalDatabase {
   Future<void> markAllUnsynced() async {
     final db = await database;
     await db.update('transactions', {'synced': 0, 'updated_at': DateTime.now().toIso8601String()});
+  }
+
+  // ───────────────────────── Debts table DAO ─────────────────────────
+
+  Future<int> insertDebt(DebtEntry entry) async {
+    final db = await database;
+    return db.insert('debts', entry.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<int> updateDebt(DebtEntry entry) async {
+    final db = await database;
+    return db.update('debts', entry.toMap(), where: 'id = ?', whereArgs: [entry.id]);
+  }
+
+  Future<int> deleteDebt(String id) async {
+    final db = await database;
+    return db.delete('debts', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<DebtEntry>> getAllDebts({bool? settledOnly}) async {
+    final db = await database;
+    final where = <String>[];
+    final args = <dynamic>[];
+    if (settledOnly != null) {
+      where.add('settled = ?');
+      args.add(settledOnly ? 1 : 0);
+    }
+    final result = await db.query(
+      'debts',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'settled ASC, created_at DESC',
+    );
+    return result.map((m) => DebtEntry.fromMap(m)).toList();
+  }
+
+  Future<DebtEntry?> getDebtById(String id) async {
+    final db = await database;
+    final rows = await db.query('debts', where: 'id = ?', whereArgs: [id], limit: 1);
+    if (rows.isEmpty) return null;
+    return DebtEntry.fromMap(rows.first);
   }
 }

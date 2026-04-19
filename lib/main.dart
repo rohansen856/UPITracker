@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
 import 'config/theme.dart';
+import 'providers/debt_provider.dart';
 import 'providers/transaction_provider.dart';
 
 Future<void> main() async {
@@ -26,8 +27,15 @@ class UpiTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TransactionProvider()..initialize(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => TransactionProvider()..initialize(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DebtProvider()..load(),
+        ),
+      ],
       child: MaterialApp(
         title: 'UPI Tracker',
         debugShowCheckedModeBanner: false,
