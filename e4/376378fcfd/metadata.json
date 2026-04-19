@@ -1,0 +1,18 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "e4376378fcfd",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "lib/screens/dashboard_screen.dart"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e4/376378fcfd/0/metadata.json",
+      "transcript": "/e4/376378fcfd/0/full.jsonl",
+      "content_hash": "/e4/376378fcfd/0/content_hash.txt",
+      "prompt": "/e4/376378fcfd/0/prompt.txt"
+    }
+  ]
+}

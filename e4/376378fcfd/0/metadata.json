@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "e4376378fcfd",
+  "session_id": "029b4b73-5ca9-47ed-884b-8063b53e82aa",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-19T16:23:21.693339244Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "lib/screens/dashboard_screen.dart"
+  ],
+  "agent": "Cursor",
+  "model": "claude-opus-4-7",
+  "turn_id": "4880787adedd",
+  "checkpoint_transcript_start": 56,
+  "transcript_lines_at_start": 56,
+  "session_metrics": {
+    "turn_count": 4,
+    "context_tokens": 184169,
+    "context_window_size": 200000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-19T16:23:21.687865848Z",
+    "agent_lines": 0,
+    "agent_removed": 117,
+    "human_added": 100,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 100,
+    "total_lines_changed": 233,
+    "agent_percentage": 50.21459227467812,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 1,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 117,
+      "user_added_per_file": {
+        "AppIcons (1)/Assets.xcassets/AppIcon.appiconset/Contents.json": 1
+      }
+    }
+  ]
+}
