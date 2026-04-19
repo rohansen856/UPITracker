@@ -6,14 +6,73 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
+import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Shader
 import android.widget.RemoteViews
-import java.io.File
+import org.json.JSONArray
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
+/**
+ * Home-screen widget that renders the last-24h spending snapshot pushed by
+ * Flutter through the `updateWidget` method channel. Reading from
+ * SharedPreferences (rather than re-opening SQLite in a BroadcastReceiver) is
+ * what lets the widget actually load on the launcher.
+ */
 class SpendingWidgetProvider : AppWidgetProvider() {
+
+    companion object {
+        private const val PREFS = "receipt_widget"
+        private const val KEY_SPENT_24H = "spent24h"
+        private const val KEY_RECEIVED_24H = "received24h"
+        private const val KEY_SPENT_PREV_24H = "spentPrev24h"
+        private const val KEY_DELTA_PCT = "deltaPct"
+        private const val KEY_HAS_DELTA = "hasDelta"
+        private const val KEY_COUNT = "count24h"
+        private const val KEY_SPARK = "spark7d"
+        private const val KEY_UPDATED_AT = "updatedAt"
+
+        /**
+         * Called from [MainActivity] whenever Flutter pushes a new snapshot.
+         * Accepts a `Map<String, Any?>` matching the payload built in
+         * `TransactionProvider._refreshWidget`.
+         */
+        fun saveSnapshot(context: Context, payload: Any?) {
+            val map = payload as? Map<*, *> ?: return
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+
+            prefs.putFloat(KEY_SPENT_24H, (map["spent24h"] as? Number)?.toFloat() ?: 0f)
+            prefs.putFloat(KEY_RECEIVED_24H, (map["received24h"] as? Number)?.toFloat() ?: 0f)
+            prefs.putFloat(KEY_SPENT_PREV_24H, (map["spentPrev24h"] as? Number)?.toFloat() ?: 0f)
+
+            val delta = map["deltaPct"] as? Number
+            prefs.putBoolean(KEY_HAS_DELTA, delta != null)
+            prefs.putFloat(KEY_DELTA_PCT, delta?.toFloat() ?: 0f)
+
+            prefs.putInt(KEY_COUNT, (map["count24h"] as? Number)?.toInt() ?: 0)
+
+            val spark = (map["spark7d"] as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toDouble() }
+                ?: emptyList()
+            prefs.putString(KEY_SPARK, JSONArray(spark).toString())
+
+            prefs.putLong(
+                KEY_UPDATED_AT,
+                (map["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
+            )
+            prefs.apply()
+        }
+    }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (id in appWidgetIds) {
@@ -31,72 +90,138 @@ class SpendingWidgetProvider : AppWidgetProvider() {
     }
 
     private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
+        val snapshot = readSnapshot(context)
         val views = RemoteViews(context.packageName, R.layout.spending_widget_layout)
-        val summary = readTodaySummary(context)
 
-        val fmt = NumberFormat.getInstance(Locale("en", "IN"))
+        val inr = NumberFormat.getInstance(Locale("en", "IN")).apply {
+            maximumFractionDigits = 0
+        }
 
-        views.setTextViewText(R.id.widget_spent, "₹${fmt.format(summary.spent)}")
-        views.setTextViewText(R.id.widget_received, "₹${fmt.format(summary.received)}")
-        views.setTextViewText(R.id.widget_date, SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date()))
-        views.setTextViewText(R.id.widget_count, "${summary.count} txns today")
+        views.setTextViewText(R.id.widget_spent, "₹${inr.format(snapshot.spent)}")
+        views.setTextViewText(R.id.widget_received, "₹${inr.format(snapshot.received)} in")
+        views.setTextViewText(R.id.widget_subtitle, "Last 24 hours")
+        views.setTextViewText(R.id.widget_date, SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date()))
+        views.setTextViewText(R.id.widget_count, "${snapshot.count} txn${if (snapshot.count == 1) "" else "s"}")
 
+        // Trend badge: +/− % vs yesterday, or "tracking started" if we have no
+        // prior data. We swap entire drawable resources (not just colors) so the
+        // rounded pill shape is preserved.
+        if (snapshot.hasDelta) {
+            val pct = snapshot.deltaPct
+            val isFlat = abs(pct) < 0.5
+            val isUp = pct > 0
+            val label = when {
+                isFlat -> "≈ flat vs yesterday"
+                isUp -> "▲ +${pct.roundToInt()}% vs yesterday"
+                else -> "▼ ${pct.roundToInt()}% vs yesterday"
+            }
+            views.setTextViewText(R.id.widget_trend, label)
+            val (fg, bgRes) = when {
+                isFlat -> Color.parseColor("#546E7A") to R.drawable.widget_chip_neutral
+                isUp -> Color.parseColor("#E53935") to R.drawable.widget_chip_up
+                else -> Color.parseColor("#2E7D32") to R.drawable.widget_chip_down
+            }
+            views.setTextColor(R.id.widget_trend, fg)
+            views.setInt(R.id.widget_trend, "setBackgroundResource", bgRes)
+        } else {
+            views.setTextViewText(R.id.widget_trend, "tracking started")
+            views.setTextColor(R.id.widget_trend, Color.parseColor("#546E7A"))
+            views.setInt(R.id.widget_trend, "setBackgroundResource", R.drawable.widget_chip_neutral)
+        }
+
+        // Sparkline: build a bitmap because RemoteViews has no way to set per-bar
+        // heights on API < 31 otherwise.
+        val bars = if (snapshot.spark.isEmpty()) List(7) { 0.0 } else snapshot.spark
+        val sparkBmp = drawSparkline(context, bars)
+        views.setImageViewBitmap(R.id.widget_spark, sparkBmp)
+
+        // Tap opens the app.
         val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         if (launchIntent != null) {
-            val pending = PendingIntent.getActivity(context, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val pending = PendingIntent.getActivity(
+                context,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
             views.setOnClickPendingIntent(R.id.widget_root, pending)
         }
 
         manager.updateAppWidget(widgetId, views)
     }
 
-    private fun readTodaySummary(context: Context): TodaySummary {
-        val dbPath = findDatabase(context) ?: return TodaySummary()
+    private fun readSnapshot(context: Context): Snapshot {
+        val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val sparkJson = prefs.getString(KEY_SPARK, "[]") ?: "[]"
+        val spark = runCatching {
+            val arr = JSONArray(sparkJson)
+            List(arr.length()) { arr.optDouble(it, 0.0) }
+        }.getOrDefault(emptyList())
 
-        var db: SQLiteDatabase? = null
-        try {
-            db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY)
+        return Snapshot(
+            spent = prefs.getFloat(KEY_SPENT_24H, 0f).toDouble(),
+            received = prefs.getFloat(KEY_RECEIVED_24H, 0f).toDouble(),
+            spentPrev = prefs.getFloat(KEY_SPENT_PREV_24H, 0f).toDouble(),
+            hasDelta = prefs.getBoolean(KEY_HAS_DELTA, false),
+            deltaPct = prefs.getFloat(KEY_DELTA_PCT, 0f).toDouble(),
+            count = prefs.getInt(KEY_COUNT, 0),
+            spark = spark,
+            updatedAt = prefs.getLong(KEY_UPDATED_AT, 0L),
+        )
+    }
 
-            val todayStart = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) + "T00:00:00.000"
+    /**
+     * Draws a 7-bar sparkline with a subtle gradient and highlights the tallest
+     * bar. Returns a bitmap sized to comfortably fill the widget's spark slot.
+     */
+    private fun drawSparkline(context: Context, values: List<Double>): Bitmap {
+        val density = context.resources.displayMetrics.density
+        val w = (280 * density).roundToInt()
+        val h = (52 * density).roundToInt()
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
 
-            val spentCursor = db.rawQuery(
-                "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE transaction_type = 'debit' AND transaction_date >= ?",
-                arrayOf(todayStart)
-            )
-            var spent = 0.0
-            if (spentCursor.moveToFirst()) spent = spentCursor.getDouble(0)
-            spentCursor.close()
+        val maxVal = (values.maxOrNull() ?: 0.0).coerceAtLeast(0.0)
+        val n = values.size.coerceAtLeast(1)
+        val slot = w.toFloat() / n
+        val barWidth = (slot * 0.52f).coerceAtLeast(4f * density)
+        val radius = 4f * density
 
-            val recvCursor = db.rawQuery(
-                "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE transaction_type = 'credit' AND transaction_date >= ?",
-                arrayOf(todayStart)
-            )
-            var received = 0.0
-            if (recvCursor.moveToFirst()) received = recvCursor.getDouble(0)
-            recvCursor.close()
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val baseline = h.toFloat() - 1f
 
-            val countCursor = db.rawQuery(
-                "SELECT COUNT(*) FROM transactions WHERE transaction_date >= ?",
-                arrayOf(todayStart)
-            )
-            var count = 0
-            if (countCursor.moveToFirst()) count = countCursor.getInt(0)
-            countCursor.close()
+        for (i in values.indices) {
+            val v = values[i]
+            val isMax = maxVal > 0.0 && v >= maxVal
+            val factor = if (maxVal == 0.0) 0.0 else v / maxVal
+            val barHeight = (factor * (h - 8f * density)).toFloat().coerceAtLeast(3f * density)
+            val left = slot * i + (slot - barWidth) / 2f
+            val top = baseline - barHeight
+            val right = left + barWidth
+            val bottom = baseline
 
-            return TodaySummary(spent, received, count)
-        } catch (e: Exception) {
-            return TodaySummary()
-        } finally {
-            db?.close()
+            val topColor = if (isMax) Color.parseColor("#1E88E5") else Color.parseColor("#7FB3E5F5")
+            val botColor = if (isMax) Color.parseColor("#64B5F6") else Color.parseColor("#33B3E5F5")
+            paint.shader = LinearGradient(0f, top, 0f, bottom, topColor, botColor, Shader.TileMode.CLAMP)
+
+            c.drawRoundRect(RectF(left, top, right, bottom), radius, radius, paint)
         }
+
+        paint.shader = null
+        paint.color = Color.parseColor("#1FFFFFFF")
+        c.drawRect(0f, baseline, w.toFloat(), baseline + 1f, paint)
+
+        return bmp
     }
 
-    private fun findDatabase(context: Context): String? {
-        // sqflite stores databases in the app's databases directory
-        val dbDir = File(context.applicationInfo.dataDir, "databases")
-        val dbFile = File(dbDir, "upi_tracker.db")
-        return if (dbFile.exists()) dbFile.absolutePath else null
-    }
-
-    data class TodaySummary(val spent: Double = 0.0, val received: Double = 0.0, val count: Int = 0)
+    private data class Snapshot(
+        val spent: Double = 0.0,
+        val received: Double = 0.0,
+        val spentPrev: Double = 0.0,
+        val hasDelta: Boolean = false,
+        val deltaPct: Double = 0.0,
+        val count: Int = 0,
+        val spark: List<Double> = emptyList(),
+        val updatedAt: Long = 0L,
+    )
 }

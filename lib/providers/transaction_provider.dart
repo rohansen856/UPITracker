@@ -28,8 +28,11 @@ class TransactionProvider extends ChangeNotifier {
 
   List<TransactionRecord> _transactions = [];
   Map<String, double> _summary = {'total_spent': 0, 'total_received': 0, 'net': 0};
-  Map<String, double> _todaySummary = {'total_spent': 0, 'total_received': 0, 'net': 0};
+  Map<String, double> _last24hSummary = {'total_spent': 0, 'total_received': 0, 'net': 0};
+  Map<String, double> _prev24hSummary = {'total_spent': 0, 'total_received': 0, 'net': 0};
   Map<String, double> _spendingByApp = {};
+  List<double> _last7dSpending = const [];
+  int _last24hCount = 0;
   bool _isLoading = false;
   String? _error;
   int _totalCount = 0;
@@ -47,11 +50,37 @@ class TransactionProvider extends ChangeNotifier {
 
   List<TransactionRecord> get transactions => _transactions;
   Map<String, double> get summary => _summary;
-  Map<String, double> get todaySummary => _todaySummary;
+
+  /// Rolling 24-hour window summary (now-24h → now).
+  Map<String, double> get last24hSummary => _last24hSummary;
+
+  /// The preceding 24-hour window (now-48h → now-24h) used for trend comparison.
+  Map<String, double> get prev24hSummary => _prev24hSummary;
+
+  /// Backwards-compatible alias; the dashboard now renders the rolling 24h window here.
+  Map<String, double> get todaySummary => _last24hSummary;
+
   Map<String, double> get spendingByApp => _spendingByApp;
+  List<double> get last7dSpending => _last7dSpending;
+  int get last24hCount => _last24hCount;
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get totalCount => _totalCount;
+
+  /// Transactions that fall inside the rolling 24h window, sorted newest-first.
+  List<TransactionRecord> get recent24hTransactions {
+    final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+    return _transactions.where((t) => t.transactionDate.isAfter(cutoff)).toList();
+  }
+
+  /// Percent change of 24h spending vs the preceding 24h window.
+  /// Returns `null` when the prior window has no spending (comparison is undefined).
+  double? get spendingDeltaPct {
+    final prev = _prev24hSummary['total_spent'] ?? 0;
+    final curr = _last24hSummary['total_spent'] ?? 0;
+    if (prev <= 0) return null;
+    return ((curr - prev) / prev) * 100;
+  }
   SyncService get syncService => _syncService;
   bool get isListening => _isListening;
   bool get isSyncing => _syncService.isSyncing;
@@ -334,8 +363,23 @@ class TransactionProvider extends ChangeNotifier {
       _summary = await _localDb.getSummary(fromDate: effectiveFrom, toDate: to ?? _toDate);
       _spendingByApp = await _localDb.getSpendingByApp(fromDate: effectiveFrom, toDate: to ?? _toDate);
 
-      final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      _todaySummary = await _localDb.getSummary(fromDate: todayStart, toDate: DateTime.now());
+      final now = DateTime.now();
+      final last24hStart = now.subtract(const Duration(hours: 24));
+      final prev24hStart = now.subtract(const Duration(hours: 48));
+
+      _last24hSummary = await _localDb.getSummary(fromDate: last24hStart, toDate: now);
+      _prev24hSummary = await _localDb.getSummary(fromDate: prev24hStart, toDate: last24hStart);
+
+      final dailyRows = await _localDb.getDailyTotals(
+        fromDate: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6)),
+        toDate: now,
+      );
+      _last7dSpending = _bucketDailySpending(dailyRows, now);
+
+      // Count of transactions (both directions) in the past 24h — used by the widget.
+      _last24hCount = _transactions
+          .where((t) => t.transactionDate.isAfter(last24hStart))
+          .length;
 
       notifyListeners();
       _refreshWidget();
@@ -343,6 +387,27 @@ class TransactionProvider extends ChangeNotifier {
       _error = 'Failed to load summary: $e';
       notifyListeners();
     }
+  }
+
+  /// Build a 7-element list of daily spending (oldest → today) from the
+  /// `getDailyTotals` rows. Missing days are zero-filled so widgets can always
+  /// render a 7-bar sparkline.
+  List<double> _bucketDailySpending(List<Map<String, dynamic>> rows, DateTime now) {
+    final buckets = List<double>.filled(7, 0.0);
+    for (final row in rows) {
+      final type = row['transaction_type'] as String?;
+      if (type != 'debit') continue;
+      final dateStr = row['date'] as String?;
+      if (dateStr == null) continue;
+      final date = DateTime.tryParse(dateStr);
+      if (date == null) continue;
+      final today = DateTime(now.year, now.month, now.day);
+      final days = today.difference(DateTime(date.year, date.month, date.day)).inDays;
+      if (days < 0 || days > 6) continue;
+      final idx = 6 - days;
+      buckets[idx] = ((row['total'] as num?)?.toDouble() ?? 0.0);
+    }
+    return buckets;
   }
 
   Future<List<Map<String, dynamic>>> getDailyTotals(DateTime from, DateTime to) {
@@ -445,8 +510,20 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   void _refreshWidget() {
+    // Push a self-contained snapshot to the native widget so it never has to
+    // reopen SQLite from a BroadcastReceiver (which is the usual culprit behind
+    // "Can't load widget" on Android launchers).
+    final payload = <String, Object?>{
+      'spent24h': _last24hSummary['total_spent'] ?? 0,
+      'received24h': _last24hSummary['total_received'] ?? 0,
+      'spentPrev24h': _prev24hSummary['total_spent'] ?? 0,
+      'deltaPct': spendingDeltaPct,
+      'count24h': _last24hCount,
+      'spark7d': _last7dSpending,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    };
     const MethodChannel('com.example.receipt/methods')
-        .invokeMethod('updateWidget')
+        .invokeMethod('updateWidget', payload)
         .catchError((_) => null);
   }
 

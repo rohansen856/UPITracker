@@ -45,6 +45,10 @@ class MainActivity : FlutterActivity() {
                     result.success(readSmsHistory(limit, since))
                 }
                 "updateWidget" -> {
+                    // Persist the snapshot from Flutter so the widget provider never
+                    // has to re-read sqflite's DB from a BroadcastReceiver (that path
+                    // was the source of "Can't load widget" on the launcher).
+                    SpendingWidgetProvider.saveSnapshot(applicationContext, call.arguments)
                     val intent = Intent("com.example.receipt.UPDATE_WIDGET")
                     intent.setPackage(packageName)
                     sendBroadcast(intent)
