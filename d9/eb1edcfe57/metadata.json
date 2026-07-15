@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "d9eb1edcfe57",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "docs/README.md",
+    "docs/android/native-layer.md",
+    "docs/android/platform-channels.md",
+    "docs/architecture.md",
+    "docs/data/database.md",
+    "docs/data/models.md",
+    "docs/features/analytics.md",
+    "docs/features/debts.md",
+    "docs/features/deduplication.md",
+    "docs/features/home-widget.md",
+    "docs/features/location-tagging.md",
+    "docs/features/ml-pipeline.md",
+    "docs/features/sync.md",
+    "docs/features/transaction-capture.md",
+    "docs/features/upi-parser.md",
+    "docs/ml-training.md",
+    "docs/setup.md",
+    "docs/testing.md",
+    "docs/ui/navigation-and-theme.md",
+    "docs/ui/screens.md",
+    "docs/ui/widgets.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d9/eb1edcfe57/0/metadata.json",
+      "transcript": "/d9/eb1edcfe57/0/full.jsonl",
+      "content_hash": "/d9/eb1edcfe57/0/content_hash.txt",
+      "prompt": "/d9/eb1edcfe57/0/prompt.txt"
+    }
+  ]
+}

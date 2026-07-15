@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "d9eb1edcfe57",
+  "session_id": "d900f1d6-788b-482e-bdff-25729eda6b7d",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-15T08:15:05.044280039Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "docs/README.md",
+    "docs/android/native-layer.md",
+    "docs/android/platform-channels.md",
+    "docs/architecture.md",
+    "docs/data/database.md",
+    "docs/data/models.md",
+    "docs/features/analytics.md",
+    "docs/features/debts.md",
+    "docs/features/deduplication.md",
+    "docs/features/home-widget.md",
+    "docs/features/location-tagging.md",
+    "docs/features/ml-pipeline.md",
+    "docs/features/sync.md",
+    "docs/features/transaction-capture.md",
+    "docs/features/upi-parser.md",
+    "docs/ml-training.md",
+    "docs/setup.md",
+    "docs/testing.md",
+    "docs/ui/navigation-and-theme.md",
+    "docs/ui/screens.md",
+    "docs/ui/widgets.md"
+  ],
+  "agent": "Cursor",
+  "model": "claude-fable-5",
+  "turn_id": "bca88670fc51",
+  "session_metrics": {
+    "turn_count": 15,
+    "context_tokens": 271184,
+    "context_window_size": 300000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-15T08:15:05.02771872Z",
+    "agent_lines": 1710,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1710,
+    "total_lines_changed": 1710,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
