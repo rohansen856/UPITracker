@@ -1,0 +1,77 @@
+scan the entire application and get context of everything. get context of every feature, implementation, function, UI etc. everything.
+
+---
+
+scan the entire application and get context of everything. get context of every feature, implementation, function, UI etc. everything.
+
+---
+
+scan the entire application and get context of everything. get context of every feature, implementation, function, UI etc. everything. create a docs/ folder aand document everything there with proper structure.
+
+---
+
+scan the entire application and get context of everything. get context of every feature, implementation, function, UI etc. everything. create a docs/ folder aand document everything there with proper structure.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+continue
+
+---
+
+continue
+
+---
+
+now, in the application, there is mechanism to detect UPI payment through messages. but the current implementation is really crude and misses very often. i want you to make the detection of UPI transaction very accurate as possible (send and receieve money) with proper idempotency detection so that duplicate entries can be avoided correctly. for the detection of transaction you may even take approach to implement lightweight ML model that can run on phone or any other better approach you can think of for best possible approach. test it rigorously and make sure to get as much accuracy and false positive/negative detection properly.
+
+---
+
+now, in the application, there is mechanism to detect UPI payment through messages. but the current implementation is really crude and misses very often. i want you to make the detection of UPI transaction very accurate as possible (send and receieve money) with proper idempotency detection so that duplicate entries can be avoided correctly. for the detection of transaction you may even take approach to implement lightweight ML model that can run on phone or any other better approach you can think of for best possible approach. test it rigorously and make sure to get as much accuracy and false positive/negative detection properly.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+continue
+
+---
+
+continue
+
+---
+
+continue

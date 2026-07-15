@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "b99b4afe7ebe",
+  "session_id": "d900f1d6-788b-482e-bdff-25729eda6b7d",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-15T08:14:24.467317694Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/generate_ml_fixtures.py",
+    "scripts/ml_core.py",
+    "scripts/train_all_models.py",
+    "test/accuracy/model_consistency_test.dart",
+    "test/fixtures/direction_fixtures.json",
+    "test/fixtures/spam_fixtures.json",
+    "test/fixtures/transactional_fixtures.json",
+    "test/integration/transaction_pipeline_test.dart",
+    "test/services/dedup_service_test.dart",
+    "test/services/ml/message_pipeline_test.dart",
+    "test/services/upi_parser_test.dart"
+  ],
+  "agent": "Cursor",
+  "model": "claude-fable-5",
+  "turn_id": "bca88670fc51",
+  "session_metrics": {
+    "turn_count": 15,
+    "context_tokens": 271184,
+    "context_window_size": 300000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-15T08:14:24.456401699Z",
+    "agent_lines": 808,
+    "agent_removed": 130,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 808,
+    "total_lines_changed": 938,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}

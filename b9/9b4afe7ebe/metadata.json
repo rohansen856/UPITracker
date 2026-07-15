@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "b99b4afe7ebe",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/generate_ml_fixtures.py",
+    "scripts/ml_core.py",
+    "scripts/train_all_models.py",
+    "test/accuracy/model_consistency_test.dart",
+    "test/fixtures/direction_fixtures.json",
+    "test/fixtures/spam_fixtures.json",
+    "test/fixtures/transactional_fixtures.json",
+    "test/integration/transaction_pipeline_test.dart",
+    "test/services/dedup_service_test.dart",
+    "test/services/ml/message_pipeline_test.dart",
+    "test/services/upi_parser_test.dart"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b9/9b4afe7ebe/0/metadata.json",
+      "transcript": "/b9/9b4afe7ebe/0/full.jsonl",
+      "content_hash": "/b9/9b4afe7ebe/0/content_hash.txt",
+      "prompt": "/b9/9b4afe7ebe/0/prompt.txt"
+    }
+  ]
+}
