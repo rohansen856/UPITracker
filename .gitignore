@@ -48,6 +48,7 @@ app.*.map.json
 .claude
 .cursor
 .entire
+.venv-ml/
 
 # Training datasets — keep the folder in the repo (see data/.gitkeep) but
 # never commit the CSVs themselves (they contain real SMS / personal data).
