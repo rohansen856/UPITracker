@@ -1,0 +1,110 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "aac1dd8c8467",
+  "session_id": "d900f1d6-788b-482e-bdff-25729eda6b7d",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-15T08:13:07.226591668Z",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "lib/database/local_database.dart",
+    "lib/providers/transaction_provider.dart",
+    "lib/services/dedup_service.dart",
+    "lib/services/upi_parser.dart"
+  ],
+  "agent": "Cursor",
+  "model": "claude-fable-5",
+  "turn_id": "bca88670fc51",
+  "session_metrics": {
+    "turn_count": 15,
+    "context_tokens": 271184,
+    "context_window_size": 300000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-15T08:13:07.214574773Z",
+    "agent_lines": 0,
+    "agent_removed": 1,
+    "human_added": 226,
+    "human_modified": 25,
+    "human_removed": 0,
+    "total_committed": 231,
+    "total_lines_changed": 252,
+    "agent_percentage": 0.3968253968253968,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1342,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1634,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 804,
+      "user_lines_removed": 158,
+      "agent_lines_added": 1634,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".gitignore": 1,
+        "assets/direction_model.json": 1,
+        "assets/spam_model.json": 1,
+        "assets/transactional_model.json": 1,
+        "lib/database/local_database.dart": 17,
+        "lib/providers/transaction_provider.dart": 4,
+        "lib/services/dedup_service.dart": 101,
+        "lib/services/upi_parser.dart": 129,
+        "scripts/generate_ml_fixtures.py": 17,
+        "scripts/ml_core.py": 37,
+        "scripts/train_all_models.py": 5,
+        "test/fixtures/direction_fixtures.json": 32,
+        "test/fixtures/spam_fixtures.json": 32,
+        "test/fixtures/transactional_fixtures.json": 60,
+        "test/integration/transaction_pipeline_test.dart": 89,
+        "test/services/dedup_service_test.dart": 277
+      },
+      "user_removed_per_file": {
+        "assets/direction_model.json": 1,
+        "assets/spam_model.json": 1,
+        "assets/transactional_model.json": 1,
+        "lib/providers/transaction_provider.dart": 4,
+        "lib/services/dedup_service.dart": 18,
+        "lib/services/upi_parser.dart": 3,
+        "test/fixtures/direction_fixtures.json": 12,
+        "test/fixtures/spam_fixtures.json": 12,
+        "test/fixtures/transactional_fixtures.json": 15,
+        "test/integration/transaction_pipeline_test.dart": 2,
+        "test/services/dedup_service_test.dart": 89
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2438,
+      "agent_lines_removed": 158
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2438,
+      "agent_lines_removed": 158
+    }
+  ]
+}
