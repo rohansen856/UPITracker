@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "b8a9dc74d240",
+  "session_id": "d900f1d6-788b-482e-bdff-25729eda6b7d",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-15T08:13:41.901326754Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "assets/direction_model.json",
+    "assets/spam_model.json",
+    "assets/transactional_model.json"
+  ],
+  "agent": "Cursor",
+  "model": "claude-fable-5",
+  "turn_id": "bca88670fc51",
+  "session_metrics": {
+    "turn_count": 15,
+    "context_tokens": 271184,
+    "context_window_size": 300000
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-15T08:13:41.882116766Z",
+    "agent_lines": 3,
+    "agent_removed": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3,
+    "total_lines_changed": 6,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
