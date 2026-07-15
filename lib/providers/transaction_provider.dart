@@ -224,9 +224,9 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> _processTransaction(ParsedUpi parsed, DateTime timestamp, String source, String rawText) async {
     if (_startDate != null && timestamp.isBefore(_startDate!)) return;
 
-    final dedupHash = _dedupService.generateDedupHash(parsed, timestamp);
+    final dedupHash = _dedupService.generateDedupHash(parsed, rawText);
 
-    if (await _dedupService.isDuplicate(dedupHash)) return;
+    if (await _dedupService.isDuplicate(parsed, timestamp, dedupHash)) return;
 
     LocationData? location;
     try {
@@ -299,8 +299,8 @@ class TransactionProvider extends ChangeNotifier {
 
         if (_startDate != null && timestamp.isBefore(_startDate!)) continue;
 
-        final dedupHash = _dedupService.generateDedupHash(parsed, timestamp);
-        if (await _dedupService.isDuplicate(dedupHash)) continue;
+        final dedupHash = _dedupService.generateDedupHash(parsed, body);
+        if (await _dedupService.isDuplicate(parsed, timestamp, dedupHash)) continue;
 
         final record = TransactionRecord(
           id: _uuid.v4(),

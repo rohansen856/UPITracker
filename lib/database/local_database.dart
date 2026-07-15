@@ -113,6 +113,23 @@ class LocalDatabase {
     return result.isNotEmpty;
   }
 
+  /// Potential duplicates for the fuzzy dedup tier: same amount and
+  /// direction, transaction date within [from, to].
+  Future<List<TransactionRecord>> findDedupCandidates({
+    required double amount,
+    required String type,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final db = await database;
+    final result = await db.query(
+      'transactions',
+      where: 'amount = ? AND transaction_type = ? AND transaction_date >= ? AND transaction_date <= ?',
+      whereArgs: [amount, type, from.toIso8601String(), to.toIso8601String()],
+    );
+    return result.map((m) => TransactionRecord.fromMap(m)).toList();
+  }
+
   Future<List<TransactionRecord>> getAllTransactions({
     String? typeFilter,
     String? appFilter,
