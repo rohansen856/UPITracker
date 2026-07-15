@@ -18,6 +18,23 @@ class FakeLocalDatabase extends Fake implements LocalDatabase {
     return result.isNotEmpty;
   }
 
+  @override
+  Future<List<TransactionRecord>> findDedupCandidates({
+    required double amount,
+    required String type,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    // Same SQL as the real DAO.
+    final result = await db.query(
+      'transactions',
+      where: 'amount = ? AND transaction_type = ? AND transaction_date >= ? AND transaction_date <= ?',
+      whereArgs: [amount, type, from.toIso8601String(), to.toIso8601String()],
+    );
+    return result.map((m) => TransactionRecord.fromMap(m)).toList();
+  }
+
+  @override
   Future<int> insertTransaction(TransactionRecord record) {
     return db.insert('transactions', record.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
   }
@@ -54,6 +71,7 @@ class FakeLocalDatabase extends Fake implements LocalDatabase {
     return result.map((m) => TransactionRecord.fromMap(m)).toList();
   }
 
+  @override
   Future<Map<String, double>> getSummary({DateTime? fromDate, DateTime? toDate}) async {
     final where = <String>[];
     final args = <dynamic>[];
@@ -134,8 +152,8 @@ void main() {
 
     if (startDate != null && timestamp.isBefore(startDate)) return false;
 
-    final dedupHash = dedupService.generateDedupHash(parsed, timestamp);
-    if (await dedupService.isDuplicate(dedupHash)) return false;
+    final dedupHash = dedupService.generateDedupHash(parsed, body);
+    if (await dedupService.isDuplicate(parsed, timestamp, dedupHash)) return false;
 
     final record = TransactionRecord(
       id: uuid.v4(),
@@ -273,6 +291,77 @@ void main() {
       expect(filteredSummary['total_spent'], 100.0);
       expect(filteredSummary['total_received'], 50.0);
       expect(filteredSummary['net'], -50.0);
+    });
+  });
+
+  group('PhonePe wallet / gift card end-to-end', () {
+    test('four consecutive identical wallet payments are all kept', () async {
+      // Real failure case: same amount, no ref, no counterparty — only the
+      // remaining balance distinguishes them. Old bucketed dedup kept one.
+      final bodies = [
+        "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 4000. To top-up click https://phone.pe/PHONPE/ws",
+        "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 3000. To top-up click https://phone.pe/PHONPE/ws",
+        "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 1000. To top-up click https://phone.pe/PHONPE/ws",
+        "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 0. To top-up click https://phone.pe/PHONPE/ws",
+      ];
+      var t = DateTime(2026, 7, 14, 22, 57);
+      for (final body in bodies) {
+        expect(await processMessage(sender: 'JM-PHONPE-S', body: body, timestamp: t), isTrue);
+        t = t.add(const Duration(seconds: 40));
+      }
+      final all = await fakeDb.getAllTransactions();
+      expect(all.length, 4);
+      expect(await fakeDb.getSummary(), containsPair('total_spent', 4000.0));
+    });
+
+    test('re-delivery of the same wallet payment from another sender is dropped', () async {
+      const body =
+          "You've paid Rs. 180 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 2007.5. To top-up click https://phone.pe/PHONPE/ws";
+      final t = DateTime(2026, 7, 10, 13, 5);
+      expect(await processMessage(sender: 'JD-PHONPE-S', body: body, timestamp: t), isTrue);
+      expect(
+        await processMessage(
+            sender: 'VA-PHONPE-S', body: body, timestamp: t.add(const Duration(minutes: 1))),
+        isFalse,
+      );
+      expect((await fakeDb.getAllTransactions()).length, 1);
+    });
+
+    test('gift card payment parses with counterparty and is inserted', () async {
+      final inserted = await processMessage(
+        sender: 'JM-PHONPE-S',
+        body:
+            "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
+        timestamp: DateTime(2026, 5, 29, 21, 38),
+      );
+      expect(inserted, isTrue);
+      final all = await fakeDb.getAllTransactions();
+      expect(all.first.amount, 207);
+      expect(all.first.type, TransactionType.debit);
+      expect(all.first.counterpartyName, 'SWIGGY');
+    });
+  });
+
+  group('Cross-format refund dedup end-to-end', () {
+    test('IT refund reported in two formats is inserted once', () async {
+      final first = await processMessage(
+        sender: 'JD-CBSSBI-S',
+        body:
+            'Your A/C XXXX020587 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI',
+        timestamp: DateTime(2026, 7, 11, 8, 34),
+      );
+      final second = await processMessage(
+        sender: 'VK-SBIBNK-S',
+        body:
+            'Dear Customer, For PAN XXXXXX808L, An IT Refund amount of Rs 11640 for AY-2026-27 has been credited to your account XXXXXXX0587 on 2026-07-11. -SBI',
+        timestamp: DateTime(2026, 7, 11, 8, 55),
+      );
+      expect(first, isTrue);
+      expect(second, isFalse);
+      final all = await fakeDb.getAllTransactions();
+      expect(all.length, 1);
+      expect(all.first.type, TransactionType.credit);
+      expect(all.first.amount, 11640.0);
     });
   });
 

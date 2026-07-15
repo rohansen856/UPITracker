@@ -552,4 +552,204 @@ void main() {
       expect(p.description!.length, 200);
     });
   });
+
+  // ===========================================================================
+  // PhonePe wallet / gift card SMS (JM-/JD-/VA-/AX-PHONPE-S sender IDs)
+  // ===========================================================================
+
+  group('PhonePe wallet and gift card SMS', () {
+    test('sender "PHONPE" (real-world spelling) maps to phonepe', () {
+      expect(UpiParser.identifyAppFromSender('JM-PHONPE-S'), 'phonepe');
+      expect(UpiParser.identifyAppFromSender('VA-PHONPE-S'), 'phonepe');
+    });
+
+    test('gift card with counterparty and embedded timestamp', () {
+      final p = UpiParser.parseSms(
+        sender: 'JM-PHONPE-S',
+        body:
+            "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
+      );
+      expect(p.isValid, isTrue);
+      expect(p.amount, 207); // paid amount, NOT the remaining balance
+      expect(p.type, TransactionType.debit);
+      expect(p.counterpartyName, 'SWIGGY');
+      expect(p.balanceAfter, 1534);
+      expect(p.embeddedDate, DateTime(2026, 5, 29, 21, 38, 0));
+      expect(p.embeddedDateHasTime, isTrue);
+      expect(p.upiApp, 'phonepe');
+    });
+
+    test('wallet payment with no counterparty, balance with colon + spaces', () {
+      final p = UpiParser.parseSms(
+        sender: 'JD-PHONPE-S',
+        body:
+            "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs.  3000. To top-up click https://phone.pe/PHONPE/ws",
+      );
+      expect(p.isValid, isTrue);
+      expect(p.amount, 1000);
+      expect(p.type, TransactionType.debit);
+      expect(p.balanceAfter, 3000);
+      expect(p.embeddedDate, isNull);
+    });
+
+    test('gift card to a dotted name is not truncated at the dot', () {
+      final p = UpiParser.parseSms(
+        sender: 'JM-PHONPE-S',
+        body:
+            "You've paid Rs.1000 via PhonePe Gift Card to Mr.Shawarma. Not you? Call us on 022-68727374. To buy Gift Card, click https://phone.pe/PHONPE/4fjyavab",
+      );
+      expect(p.counterpartyName, 'Mr.Shawarma');
+      expect(p.amount, 1000);
+      expect(p.balanceAfter, isNull);
+    });
+
+    test('wallet "for MERCHANT" variant extracts the merchant', () {
+      final p = UpiParser.parseSms(
+        sender: 'AX-PHONPE-S',
+        body:
+            "You've paid Rs.100 via PhonePe wallet for Lucky Mens Parlour. Not you? Call us on 022-68727374. Remaining balance: Rs.2187.5. To top-up click https://phone.pe/PHONPE/ws",
+      );
+      expect(p.counterpartyName, 'Lucky Mens Parlour');
+      expect(p.amount, 100);
+      expect(p.balanceAfter, 2187.5);
+    });
+
+    test('initials with dots survive ("H.A Associates")', () {
+      final p = UpiParser.parseSms(
+        sender: 'VA-PHONPE-S',
+        body:
+            "You've paid Rs.85 via PhonePe gift card to H.A Associates on Feb 20, 2026 at 11:02:18 AM. Not you? Call us on 022-68727374. Remaining balance Rs.845.",
+      );
+      expect(p.counterpartyName, 'H.A Associates');
+      expect(p.embeddedDate, DateTime(2026, 2, 20, 11, 2, 18));
+    });
+  });
+
+  // ===========================================================================
+  // Bank refund credits (IT refund, two SBI formats)
+  // ===========================================================================
+
+  group('Bank refund credit SMS', () {
+    test('"IT Refund ... credited" format parses as credit', () {
+      final p = UpiParser.parseSms(
+        sender: 'VK-SBIBNK-S',
+        body:
+            'Dear Customer, For PAN XXXXXX808L, An IT Refund amount of Rs 11640 for AY-2026-27 has been credited to your account XXXXXXX0587 on 2026-07-11. -SBI',
+      );
+      expect(p.isValid, isTrue);
+      expect(p.type, TransactionType.credit);
+      expect(p.amount, 11640);
+      expect(p.embeddedDate, DateTime(2026, 7, 11));
+      expect(p.embeddedDateHasTime, isFalse);
+    });
+
+    test('"has credit for ITDTAX REFUND" format parses as credit with balance', () {
+      final p = UpiParser.parseSms(
+        sender: 'JD-CBSSBI-S',
+        body:
+            'Your A/C XXXX020587 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI',
+      );
+      expect(p.isValid, isTrue);
+      expect(p.type, TransactionType.credit);
+      expect(p.amount, 11640.00);
+      expect(p.balanceAfter, 79593.25);
+      expect(p.embeddedDate, DateTime(2026, 7, 11));
+    });
+  });
+
+  // ===========================================================================
+  // Balance extraction
+  // ===========================================================================
+
+  group('Balance extraction', () {
+    test('generic bank tail "Bal INR 23,456.78"', () {
+      final p = UpiParser.parseSms(
+        sender: 'XX-ICICI',
+        body: 'INR 450.00 debited A/c no. XX1234 11-04-26 UPI/P2A/604123456791/ZOMATO. Bal INR 23,456.78.',
+      );
+      expect(p.amount, 450.00);
+      expect(p.balanceAfter, 23456.78);
+    });
+
+    test('absent balance stays null', () {
+      final p = UpiParser.parseSms(
+        sender: 'JD-SBIUPI-S',
+        body: 'Dear UPI user A/C X0587 debited by 50.00 on date 11Apr26 trf to RAVI Refno 602560907627',
+      );
+      expect(p.balanceAfter, isNull);
+    });
+  });
+
+  // ===========================================================================
+  // Embedded date extraction
+  // ===========================================================================
+
+  group('Embedded date extraction', () {
+    test('SBI debit "on date 12Jul26"', () {
+      final p = UpiParser.parseSms(
+        sender: 'JK-SBIUPI-S',
+        body:
+            'Dear UPI user A/C X0587 debited by 15000.00 on date 12Jul26 trf to ROY BROTHERS JEW Refno 619365520493 If not u? call-1800111109-SBI',
+      );
+      expect(p.embeddedDate, DateTime(2026, 7, 12));
+      expect(p.embeddedDateHasTime, isFalse);
+    });
+
+    test('SBI credit "on 05-07-26" (dd-mm-yy)', () {
+      final p = UpiParser.parseSms(
+        sender: 'JK-SBIUPI-S',
+        body:
+            'Dear UPI User, your A/c XXXXXX0587-credited by Rs.250.00 on 05-07-26 transfer from SUNEETH DEBNATH Ref No 618618940646 -SBI',
+      );
+      expect(p.embeddedDate, DateTime(2026, 7, 5));
+    });
+
+    test('ICICI "on 10-Apr-26" (dd-Mon-yy)', () {
+      final p = UpiParser.parseSms(
+        sender: 'XX-ICICI',
+        body: 'ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.',
+      );
+      expect(p.embeddedDate, DateTime(2026, 4, 10));
+    });
+
+    test('12-hour AM/PM conversion: 12:xx AM is midnight, 12:xx PM is noon', () {
+      final am = UpiParser.parseSms(
+        sender: 'JM-PHONPE-S',
+        body: "You've paid Rs.10 via PhonePe gift card to Shop on Jan 5, 2026 at 12:30:00 AM.",
+      );
+      expect(am.embeddedDate, DateTime(2026, 1, 5, 0, 30, 0));
+      final pm = UpiParser.parseSms(
+        sender: 'JM-PHONPE-S',
+        body: "You've paid Rs.10 via PhonePe gift card to Shop on Jan 5, 2026 at 12:30:00 PM.",
+      );
+      expect(pm.embeddedDate, DateTime(2026, 1, 5, 12, 30, 0));
+    });
+
+    test('no recognizable date stays null', () {
+      final p = UpiParser.parseSms(sender: 'XX-BANK', body: 'Paid Rs.100 to Shop');
+      expect(p.embeddedDate, isNull);
+    });
+  });
+
+  // ===========================================================================
+  // isUpiRelated — keywords added for refund/wallet/bare credit formats
+  // ===========================================================================
+
+  group('isUpiRelated new keywords', () {
+    test('detects "credit" without "credited"', () {
+      expect(
+        UpiParser.isUpiRelated(
+            'Your A/C XXXX020587 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI'),
+        isTrue,
+      );
+    });
+
+    test('detects "refund"', () {
+      expect(UpiParser.isUpiRelated('An IT Refund amount has been processed'), isTrue);
+    });
+
+    test('detects "wallet"', () {
+      expect(UpiParser.isUpiRelated("You've paid via PhonePe wallet"), isTrue);
+    });
+  });
 }

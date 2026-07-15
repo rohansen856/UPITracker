@@ -145,6 +145,16 @@ void main() {
       'Your transaction of Rs 250 on card XX1234 was DECLINED on 10-04-26. -HDFC',
       'Your KYC is complete. Thank you for banking with us. -SBI',
       'Cheque no 123456 of Rs 10,000 has been cleared in A/c XX1234. -HDFC',
+      // Formats observed on the user's phone that must never be ingested:
+      // mandate creation (money not moved yet), KYC updates, feedback
+      // surveys, merchant-device fee offers, recharge confirmations, OTPs.
+      'Your UPI-Mandate for Rs.139.00 is successfully created towards Spotify India Pvt Ltd from A/c No: XXXXXX1234. UMN:e728b5d9dd374742889f08faba01421e@ptyes. If not you, kindly report on 18001234. -SBI',
+      'KYC record 10085682485845 for Rahul Kumar registered with Central KYC Registry has been updated by PhonePe Wallet on 06/Nov/2025.',
+      'Dear Customer, Thank you for the transaction done today at SBI 14538 branch.Plz share your experience on https://crcf.bank.sbi/ccf/home/GetFeedback?TxnDate=291225 The feedback may be provided before 8 am tomorrow.',
+      'Monthly fee for your PhonePe device is Rs.125.00, with an offer pricing of Rs.1 subject to terms in PhonePe Business App. One-time set up fee is Rs.318.00 which includes first month Superstar Voice offer.',
+      'Recharge successful! Plan: 349.0. Jio Number: 6290000000. Benefits: Unlimited 5G data, 56GB (2GB/Day 4G Data), Unlimited Voice, 100 SMS/Day. Validity - 28 Days. Transaction ID HGALP104740962550516.',
+      '30145 is your one time password to proceed on PhonePe. It is valid for 10 minutes. Do not share your OTP with anyone.',
+      'Your OTP for Metro Mobile App is 881993. It is valid for 2 mins. IR/KOLMETRO',
     ];
 
     final txThr = TransactionalClassifier.instance.defaultThreshold;

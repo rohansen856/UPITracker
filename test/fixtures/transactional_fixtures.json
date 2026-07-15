@@ -3,77 +3,122 @@
     {
       "text": "Dear UPI user A/C X0587 debited by 500.00 on date 16Apr26 trf to SANDIP MANDAL Refno 300900907330 If not u? call-1800111109 for other services-18001234-SBI",
       "label": "positive",
-      "probability": 0.9937534721966688
+      "probability": 0.993555915809081
     },
     {
       "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.200.00 on 16-04-26 transfer from DIVYANSHUSINGH Ref No 200038012233 -SBI",
       "label": "positive",
-      "probability": 0.9952823973787368
+      "probability": 0.9951877063208353
     },
     {
       "text": "Sent Rs.1200.00 From HDFC Bank A/C x1234 To AMAZON PAY On 10/04/26 Ref 204060010123",
       "label": "positive",
-      "probability": 0.9370778830726205
+      "probability": 0.9239454393383915
     },
     {
       "text": "You paid Rs 250 to Zomato via UPI. UPI transaction ID 604123456800. From your Google Pay account.",
       "label": "positive",
-      "probability": 0.8448424178759952
+      "probability": 0.902533444846603
     },
     {
       "text": "ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.",
       "label": "positive",
-      "probability": 0.8300119617232178
+      "probability": 0.8263074241702576
     },
     {
       "text": "INR 450.00 debited A/c no. XX1234 11-04-26 18:45:22 UPI/P2A/604123456791/ZOMATO. Bal INR 23,456.78.",
       "label": "positive",
-      "probability": 0.780461363349239
+      "probability": 0.7937446942558473
     },
     {
       "text": "Paytm: Received Rs 2000 from Priya. UPI ID priya@paytm. Txn ID 123456789012",
       "label": "positive",
-      "probability": 0.8261069168227596
+      "probability": 0.8449671033237542
+    },
+    {
+      "text": "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 3000. To top-up click https://phone.pe/PHONPE/ws",
+      "label": "positive",
+      "probability": 0.9074059917814441
+    },
+    {
+      "text": "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
+      "label": "positive",
+      "probability": 0.8962021980858041
+    },
+    {
+      "text": "You've paid Rs.100 via PhonePe wallet for City Mens Parlour. Not you? Call us on 022-68727374. Remaining balance: Rs.2187.5. To top-up click https://phone.pe/PHONPE/ws",
+      "label": "positive",
+      "probability": 0.8965261923506497
+    },
+    {
+      "text": "Dear Customer, For PAN XXXXXX123L, An IT Refund amount of Rs 11640 for AY-2026-27 has been credited to your account XXXXXXX1234 on 2026-07-11. -SBI",
+      "label": "positive",
+      "probability": 0.7786324105831259
+    },
+    {
+      "text": "Your A/C XXXX021234 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI",
+      "label": "positive",
+      "probability": 0.8456329138708537
     },
     {
       "text": "Dear Customer, 478912 is your OTP for transaction of Rs 500 on HDFC card ending 1234. Do not share.",
       "label": "negative",
-      "probability": 0.034306242132160436
+      "probability": 0.040525622870387475
     },
     {
       "text": "Your A/c XX0587 balance is Rs 3,245.67 as on 12-04-26 17:00. -SBI",
       "label": "negative",
-      "probability": 0.10796064919614211
+      "probability": 0.1421445177560695
     },
     {
       "text": "Dear Cust, your HDFC CC ending 1234 bill of Rs 5,678 is due on 15-04-26. Pay now to avoid late fee.",
       "label": "negative",
-      "probability": 0.030483624775359378
+      "probability": 0.03205201758656569
     },
     {
       "text": "Dear Customer, your UPI payment of Rs 500 to merchant@upi on 10-04-26 FAILED. Any amount debited will be reversed in 3-5 days. -SBI",
       "label": "negative",
-      "probability": 0.07744425108170659
+      "probability": 0.09325909581308621
     },
     {
       "text": "Your transaction of Rs 250 on card XX1234 was DECLINED on 10-04-26. -HDFC",
       "label": "negative",
-      "probability": 0.05959186852990108
+      "probability": 0.06303295469636828
     },
     {
       "text": "Hey, can you pick up some milk on the way home?",
       "label": "negative",
-      "probability": 0.012915295068008722
+      "probability": 0.015001344827325016
     },
     {
       "text": "Meeting rescheduled to 4 PM tomorrow in conference room B.",
       "label": "negative",
-      "probability": 0.017425340618502507
+      "probability": 0.018013960666258388
     },
     {
       "text": "URGENT: Your KYC has expired. Update OTP at axis-secure.link now to avoid block",
       "label": "negative",
-      "probability": 0.012956038572596041
+      "probability": 0.013454282273603091
+    },
+    {
+      "text": "Your UPI-Mandate for Rs.139.00 is successfully created towards Spotify India Pvt Ltd from A/c No: XXXXXX1234. UMN:e728b5d9dd374742889f08faba01421e@ptyes. If not you, kindly report on 18001234. -SBI",
+      "label": "negative",
+      "probability": 0.06793628558999239
+    },
+    {
+      "text": "KYC record 10085682485845 for Rahul Kumar registered with Central KYC Registry has been updated by PhonePe Wallet on 06/Nov/2025.",
+      "label": "negative",
+      "probability": 0.0547071473136557
+    },
+    {
+      "text": "30145 is your one time password to proceed on PhonePe. It is valid for 10 minutes. Do not share your OTP with anyone.",
+      "label": "negative",
+      "probability": 0.025404211397343068
+    },
+    {
+      "text": "Recharge successful! Plan: 349.0. Jio Number: 6290000000. Benefits: Unlimited 5G data, 56GB (2GB/Day 4G Data), Unlimited Voice, 100 SMS/Day. Validity - 28 Days. Transaction ID HGALP104740962550516.",
+      "label": "negative",
+      "probability": 0.020304274715615623
     }
   ]
 }

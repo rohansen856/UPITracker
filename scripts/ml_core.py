@@ -148,6 +148,19 @@ SYNTHETIC_DEBITS = [
     "Paytm: Paid Rs 350 to Blinkit via UPI. Order ID OID0987654321",
     "BHIM: Rs 100 sent to gaurav@upi successfully. Txn 604123456803",
     "Amazon Pay: Rs 499 debited from your wallet for order #123-4567890-1234567",
+    # PhonePe wallet / gift-card payment confirmations. These carry
+    # "Not you? Call us" + a top-up URL, which the earlier models
+    # mistook for spam — real user messages were being dropped.
+    "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
+    "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 3000. To top-up click https://phone.pe/PHONPE/ws",
+    "You've paid Rs.1000 via PhonePe Gift Card to Mr.Sharma. Not you? Call us on 022-68727374. To buy Gift Card, click https://phone.pe/PHONPE/4fjyavab",
+    "You've paid Rs.190 via PhonePe gift card to Campus canteen on Feb 21, 2026 at 8:01:30 PM. Not you? Call us on 022-68727374. Remaining balance Rs.147.",
+    "You've paid Rs.100 via PhonePe wallet for City Mens Parlour. Not you? Call us on 022-68727374. Remaining balance: Rs.2187.5. To top-up click https://phone.pe/PHONPE/ws",
+    "You've paid Rs. 180 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 2007.5. To top-up click https://phone.pe/PHONPE/ws",
+    "You've paid Rs.50 via PhonePe wallet for Ganesh fast food. Not you? Call us on 022-68727374. Remaining balance: Rs.1957.5. To top-up click https://phone.pe/PHONPE/ws",
+    "You've paid Rs.85 via PhonePe gift card to H.A Associates on Feb 20, 2026 at 11:02:18 AM. Not you? Call us on 022-68727374. Remaining balance Rs.845.",
+    "You've paid Rs. 202 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 86.8. To top-up click https://phone.pe/PHONPE/ws",
+    "You've paid Rs.55 via PhonePe gift card to Sunrise Electric on Feb 19, 2026 at 6:15:21 PM. Not you? Call us on 022-68727374. Remaining balance Rs.930.",
 ]
 
 SYNTHETIC_CREDITS = [
@@ -167,6 +180,12 @@ SYNTHETIC_CREDITS = [
     "Google Pay: Rs 850 received from Dinesh. UPI Ref 604123456823.",
     "PhonePe: Rs 1,200 received from RINA. Txn ID T2304100012500",
     "NEFT credit of Rs.25000 received in your A/c XX1234 on 10-04-26 from RAKESH KUMAR, State Bank of India. Ref N123456789012.",
+    # Bank refund / tax-refund credits — money genuinely received, but the
+    # wording ("IT Refund", "has credit for") differs from UPI credits.
+    "Dear Customer, For PAN XXXXXX123L, An IT Refund amount of Rs 11640 for AY-2026-27 has been credited to your account XXXXXXX1234 on 2026-07-11. -SBI",
+    "Dear Customer, For PAN XXXXXX987K, An IT Refund amount of Rs 4520 for AY-2025-26 has been credited to your account XXXXXXX9876 on 2026-06-02. -SBI",
+    "Your A/C XXXX021234 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI",
+    "Your A/C XXXX5678 has credit for ITDTAX REFUND 2025-26 LREPS221 of Rs 2,340.00 on 02/06/26. Avl Bal Rs 12,400.00.-SBI",
 ]
 
 # Non-transactional bank SMS — informational, promotional that still looks
@@ -202,6 +221,24 @@ NON_TRANSACTIONAL_BANKING = [
     "Cheque no 123456 of Rs 10,000 has been cleared in A/c XX1234. -HDFC",
     "Dear customer your debit card has been dispatched and will arrive in 7 working days. -SBI",
     "Your Fixed Deposit of Rs 50,000 has been booked successfully at 7.1% for 12 months. -ICICI",
+    # Mandate creation — money has NOT moved yet; the actual debit arrives
+    # as a separate SMS. Must be dropped at layer 2.
+    "Your UPI-Mandate for Rs.139.00 is successfully created towards Spotify India Pvt Ltd from A/c No: XXXXXX1234. UMN:e728b5d9dd374742889f08faba01421e@ptyes. If not you, kindly report on 18001234. -SBI",
+    "Your UPI-Mandate for Rs.499.00 is successfully created towards Netflix Entertainment from A/c No: XXXXXX5678. UMN:ab12cd34ef56@ptaxis. If not you, kindly report on 18001234. -SBI",
+    # KYC / account-servicing updates from wallets and banks.
+    "KYC record 10085682485845 for Rahul Kumar registered with Central KYC Registry has been updated by PhonePe Wallet on 06/Nov/2025.",
+    "Your KYC for PhonePe Wallet is due for renewal. Complete video KYC in the app to continue using wallet services.",
+    # Branch feedback / survey requests.
+    "Dear Customer, Thank you for the transaction done today at SBI 14538 branch.Plz share your experience on https://crcf.bank.sbi/ccf/home/GetFeedback?TxnDate=291225&TxnType=001010 The feedback may be provided before 8 am tomorrow. No Personal Information would be captured.-SBI",
+    # Merchant-device fee terms / offers from payment apps.
+    "Monthly fee for your PhonePe device is Rs.125.00, with an offer pricing of Rs.1 subject to terms in PhonePe Business App. One-time set up fee is Rs.318.00 which includes first month Superstar Voice offer.",
+    # Wallet / app OTPs.
+    "30145 is your one time password to proceed on PhonePe. It is valid for 10 minutes. Do not share your OTP with anyone.",
+    "Your OTP for Metro Mobile App is 881993. It is valid for 2 mins. IR/KOLMETRO",
+    # Telecom recharge confirmations — the money movement is captured by the
+    # separate bank/UPI debit SMS, not this service confirmation.
+    "Recharge successful! Plan: 349.0. Jio Number: 6290000000. Benefits: Unlimited 5G data, 56GB (2GB/Day 4G Data), Unlimited Voice, 100 SMS/Day. Validity - 28 Days. Transaction ID HGALP104740962550516.",
+    "Recharge of Rs 239 successful on your Airtel number 9800000000. Validity 24 days. Balance data 1.5GB/day.",
 ]
 
 

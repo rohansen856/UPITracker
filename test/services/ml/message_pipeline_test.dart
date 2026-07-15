@@ -81,6 +81,53 @@ void main() {
     });
   });
 
+  group('PhonePe wallet / gift card and refund formats', () {
+    // These real formats were dropped by the earlier models (the "Not you?
+    // Call us … To top-up click <url>" wording looked like spam). They must
+    // pass both layers now.
+    test('wallet and gift card payments pass the full stack', () {
+      const positives = [
+        "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
+        "You've paid Rs. 1000 via PhonePe wallet. Not you? Call us on 022-68727374. Remaining balance: Rs. 3000. To top-up click https://phone.pe/PHONPE/ws",
+        "You've paid Rs.100 via PhonePe wallet for City Mens Parlour. Not you? Call us on 022-68727374. Remaining balance: Rs.2187.5. To top-up click https://phone.pe/PHONPE/ws",
+      ];
+      for (final body in positives) {
+        final d = MessagePipeline.instance.evaluate(body);
+        expect(d.shouldIngest, isTrue, reason: 'pipeline dropped: $body → $d');
+        expect(d.stage, 'passed');
+      }
+    });
+
+    test('bank refund credits pass the full stack', () {
+      const refunds = [
+        'Dear Customer, For PAN XXXXXX123L, An IT Refund amount of Rs 11640 for AY-2026-27 has been credited to your account XXXXXXX1234 on 2026-07-11. -SBI',
+        'Your A/C XXXX021234 has credit for ITDTAX REFUND 2026-27 LREPS480 of Rs 11,640.00 on 11/07/26. Avl Bal Rs 79,593.25.-SBI',
+      ];
+      for (final body in refunds) {
+        final d = MessagePipeline.instance.evaluate(body);
+        expect(d.shouldIngest, isTrue, reason: 'pipeline dropped: $body → $d');
+        expect(d.directionHint, TxDirection.credit,
+            reason: 'refund credit misdirected: $d');
+      }
+    });
+
+    test('mandate creation / KYC / promos / fee offers still drop', () {
+      const negatives = [
+        'Your UPI-Mandate for Rs.139.00 is successfully created towards Spotify India Pvt Ltd from A/c No: XXXXXX1234. UMN:e728b5d9dd374742889f08faba01421e@ptyes. If not you, kindly report on 18001234. -SBI',
+        'KYC record 10085682485845 for Rahul Kumar registered with Central KYC Registry has been updated by PhonePe Wallet on 06/Nov/2025.',
+        "Dear User, You've earned Lifetime Free Kiwi UPI Credit Card (CC: JIOKIWI) on Jio Recharge. Claim now: https://t.jio/JIOCPN/WjSdc9 T&C* JioCoupons",
+        '30145 is your one time password to proceed on PhonePe. It is valid for 10 minutes. Do not share your OTP with anyone.',
+        'Monthly fee for your PhonePe device is Rs.125.00, with an offer pricing of Rs.1 subject to terms in PhonePe Business App. One-time set up fee is Rs.318.00 which includes first month Superstar Voice offer.',
+        'Recharge successful! Plan: 349.0. Jio Number: 6290000000. Benefits: Unlimited 5G data, 56GB (2GB/Day 4G Data), Unlimited Voice, 100 SMS/Day. Validity - 28 Days. Transaction ID HGALP104740962550516.',
+      ];
+      for (final body in negatives) {
+        final d = MessagePipeline.instance.evaluate(body);
+        expect(d.shouldIngest, isFalse,
+            reason: 'non-transaction slipped through: $body → $d');
+      }
+    });
+  });
+
   group('direction hint', () {
     test('passes through a debit hint on real SBI debit SMS', () {
       const body =

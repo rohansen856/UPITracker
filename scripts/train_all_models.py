@@ -52,6 +52,11 @@ CURATED_SPAM = [
     "Special offer: Rs 5000 cashback on purchase of smartphone. T&C apply. bit.ly/5k",
     "Congratulations! Rs 25000 credited as part of govt relief scheme. Claim now.",
     "Get Rs 500 free on joining. Refer 5 friends to earn Rs 10000. Download app: play.g/xyz",
+    # Coupon / reward promos that mimic payment-confirmation wording
+    # ("You've earned …") — must not be confused with "You've paid …".
+    "Dear User, You've earned Lifetime Free Kiwi UPI Credit Card (CC: JIOKIWI) on Jio Recharge. Claim now: https://t.jio/JIOCPN/WjSdc9 T&C* JioCoupons",
+    "Dear User, You've earned Gadget Lane Exclusive Earbuds at Rs 299! (CC: JIOCOUPONPRO2) on JioRecharge. Claim now: https://t.jio/JIOCPN/GjITQZ T&C* JioCoupons",
+    "Dear User, You've earned 20% off on your next DTH recharge (CC: DTHSAVER) on Jio Recharge. Claim now: https://t.jio/JIOCPN/AbCdEf T&C* JioCoupons",
 ]
 
 
