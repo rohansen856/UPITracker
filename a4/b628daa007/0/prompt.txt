@@ -1,0 +1,1 @@
+scan the application and get context of everything, sll the app functionalities and implementations. specially scan the docs/ folder to read all the documentations and get context.

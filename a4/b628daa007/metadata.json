@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a4b628daa007",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/AndroidManifest.xml",
+    "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SmsReceiver.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt",
+    "android/app/src/main/kotlin/com/example/receipt/UpiNotificationListener.kt",
+    "docs/android/native-layer.md",
+    "docs/android/platform-channels.md",
+    "docs/architecture.md",
+    "docs/features/home-widget.md",
+    "ios/Runner.xcodeproj/project.pbxproj",
+    "lib/providers/transaction_provider.dart",
+    "lib/services/notification_service.dart",
+    "lib/services/sms_service.dart",
+    "linux/CMakeLists.txt",
+    "macos/Runner.xcodeproj/project.pbxproj",
+    "macos/Runner/Configs/AppInfo.xcconfig"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a4/b628daa007/0/metadata.json",
+      "transcript": "/a4/b628daa007/0/full.jsonl",
+      "content_hash": "/a4/b628daa007/0/content_hash.txt",
+      "prompt": "/a4/b628daa007/0/prompt.txt"
+    }
+  ]
+}

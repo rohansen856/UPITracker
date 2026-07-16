@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a4b628daa007",
+  "session_id": "7517c9f4-7d9c-45b9-a622-db21279169d3",
+  "strategy": "manual-commit",
+  "created_at": "2026-07-16T17:54:27.987107179Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/AndroidManifest.xml",
+    "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SmsReceiver.kt",
+    "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt",
+    "android/app/src/main/kotlin/com/example/receipt/UpiNotificationListener.kt",
+    "docs/android/native-layer.md",
+    "docs/android/platform-channels.md",
+    "docs/architecture.md",
+    "docs/features/home-widget.md",
+    "ios/Runner.xcodeproj/project.pbxproj",
+    "lib/providers/transaction_provider.dart",
+    "lib/services/notification_service.dart",
+    "lib/services/sms_service.dart",
+    "linux/CMakeLists.txt",
+    "macos/Runner.xcodeproj/project.pbxproj",
+    "macos/Runner/Configs/AppInfo.xcconfig"
+  ],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "56bc0cf9d99c",
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-07-16T17:54:27.985294684Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 50,
+    "total_committed": 0,
+    "total_lines_changed": 50,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 50,
+      "user_lines_removed": 50,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "android/app/build.gradle.kts": 2,
+        "android/app/src/main/AndroidManifest.xml": 1,
+        "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt": 5,
+        "android/app/src/main/kotlin/com/example/receipt/SmsReceiver.kt": 2,
+        "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt": 2,
+        "android/app/src/main/kotlin/com/example/receipt/UpiNotificationListener.kt": 2,
+        "docs/android/native-layer.md": 4,
+        "docs/android/platform-channels.md": 12,
+        "docs/architecture.md": 2,
+        "docs/features/home-widget.md": 2,
+        "ios/Runner.xcodeproj/project.pbxproj": 6,
+        "lib/providers/transaction_provider.dart": 1,
+        "lib/services/notification_service.dart": 2,
+        "lib/services/sms_service.dart": 2,
+        "linux/CMakeLists.txt": 1,
+        "macos/Runner.xcodeproj/project.pbxproj": 3,
+        "macos/Runner/Configs/AppInfo.xcconfig": 1
+      },
+      "user_removed_per_file": {
+        "android/app/build.gradle.kts": 2,
+        "android/app/src/main/AndroidManifest.xml": 1,
+        "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt": 5,
+        "android/app/src/main/kotlin/com/example/receipt/SmsReceiver.kt": 2,
+        "android/app/src/main/kotlin/com/example/receipt/SpendingWidgetProvider.kt": 2,
+        "android/app/src/main/kotlin/com/example/receipt/UpiNotificationListener.kt": 2,
+        "docs/android/native-layer.md": 4,
+        "docs/android/platform-channels.md": 12,
+        "docs/architecture.md": 2,
+        "docs/features/home-widget.md": 2,
+        "ios/Runner.xcodeproj/project.pbxproj": 6,
+        "lib/providers/transaction_provider.dart": 1,
+        "lib/services/notification_service.dart": 2,
+        "lib/services/sms_service.dart": 2,
+        "linux/CMakeLists.txt": 1,
+        "macos/Runner.xcodeproj/project.pbxproj": 3,
+        "macos/Runner/Configs/AppInfo.xcconfig": 1
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 50,
+      "agent_lines_removed": 50
+    }
+  ]
+}
