@@ -1,1 +1,23 @@
-scan the application and get context of everything, sll the app functionalities and implementations. specially scan the docs/ folder to read all the documentations and get context.
+[Image]
+[Image]
+[Image]
+[Image]
+[Image]
+<image_files>
+The following images were provided by the user and saved to the workspace for future use:
+1. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-e2818fb5-2170-4706-ad2d-423954df3125.png
+2. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-c507897e-69e0-4286-b31c-222a810b8334.png
+3. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-af1310dd-b3c4-4da0-8e03-83ccac9bce19.png
+4. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-94a91765-8a7d-4709-bdff-54e6ba8744ec.png
+5. /home/rcsen/.cursor/projects/home-rcsen-Documents-receipt/assets/image-00896b39-416b-4427-8c9b-1ff73cac3f6d.png
+
+These images can be copied for use in other locations.
+</image_files>
+<timestamp>Thursday, Jul 16, 2026, 11:23 PM (UTC+5:30)</timestamp>
+
+find problems and fix these bugs: 
+- the app widget shows cant load and doesnt work
+- the main page's graph bar looks wrongly center aligned and also should show number on the bar or else its ambiguous
+- when i tap on scan sms history, it momentarily shows loading and doesnt give any feedback of what happened.
+- in the debts and lending page there should be button to download the data in json format locally in a dedicated folder, and if i delete the app that should not be deleted together and when i redownload the app, if it finds a old json file for the debts and lending should show a bar for quickly pulling and syncing the data.
+- I down owe anyone any money but its showing i owe 50rs
