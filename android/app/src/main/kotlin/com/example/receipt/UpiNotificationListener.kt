@@ -1,4 +1,4 @@
-package com.example.receipt
+package com.upitracker.app
 
 import android.app.Notification
 import android.content.Intent
@@ -10,7 +10,7 @@ class UpiNotificationListener : NotificationListenerService() {
 
     companion object {
         const val TAG = "UpiNotificationListener"
-        const val ACTION_NOTIFICATION = "com.example.receipt.NOTIFICATION_RECEIVED"
+        const val ACTION_NOTIFICATION = "com.upitracker.app.NOTIFICATION_RECEIVED"
 
         val UPI_PACKAGES = setOf(
             "com.google.android.apps.nbu.paisa.user",  // GPay

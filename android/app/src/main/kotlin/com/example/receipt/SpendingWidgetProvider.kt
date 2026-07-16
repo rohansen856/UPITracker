@@ -1,4 +1,4 @@
-package com.example.receipt
+package com.upitracker.app
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -111,7 +111,7 @@ class SpendingWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == "com.example.receipt.UPDATE_WIDGET") {
+        if (intent.action == "com.upitracker.app.UPDATE_WIDGET") {
             val mgr = AppWidgetManager.getInstance(context)
             val ids = mgr.getAppWidgetIds(ComponentName(context, SpendingWidgetProvider::class.java))
             onUpdate(context, mgr, ids)

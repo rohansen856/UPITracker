@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 
 class SmsService {
-  static const _methodChannel = MethodChannel('com.example.receipt/methods');
-  static const _eventChannel = EventChannel('com.example.receipt/sms');
+  static const _methodChannel = MethodChannel('com.upitracker.app/methods');
+  static const _eventChannel = EventChannel('com.upitracker.app/sms');
 
   Stream<Map<String, dynamic>>? _smsStream;
 

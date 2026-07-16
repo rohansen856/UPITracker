@@ -1,4 +1,4 @@
-package com.example.receipt
+package com.upitracker.app
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -19,9 +19,9 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 
     companion object {
-        private const val METHOD_CHANNEL = "com.example.receipt/methods"
-        private const val NOTIFICATION_EVENT_CHANNEL = "com.example.receipt/notifications"
-        private const val SMS_EVENT_CHANNEL = "com.example.receipt/sms"
+        private const val METHOD_CHANNEL = "com.upitracker.app/methods"
+        private const val NOTIFICATION_EVENT_CHANNEL = "com.upitracker.app/notifications"
+        private const val SMS_EVENT_CHANNEL = "com.upitracker.app/sms"
     }
 
     private var notificationReceiver: BroadcastReceiver? = null
@@ -49,7 +49,7 @@ class MainActivity : FlutterActivity() {
                     // has to re-read sqflite's DB from a BroadcastReceiver (that path
                     // was the source of "Can't load widget" on the launcher).
                     SpendingWidgetProvider.saveSnapshot(applicationContext, call.arguments)
-                    val intent = Intent("com.example.receipt.UPDATE_WIDGET")
+                    val intent = Intent("com.upitracker.app.UPDATE_WIDGET")
                     intent.setPackage(packageName)
                     sendBroadcast(intent)
                     result.success(true)

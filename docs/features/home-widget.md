@@ -12,10 +12,10 @@ caused "Can't load widget"). Instead, Flutter pushes a self-contained snapshot w
 summaries reload:
 
 1. `_refreshWidget()` invokes method `updateWidget` on
-   `com.example.receipt/methods` with the payload below (errors swallowed).
+   `com.upitracker.app/methods` with the payload below (errors swallowed).
 2. `MainActivity` persists it via `SpendingWidgetProvider.saveSnapshot()` into the
    SharedPreferences file **`receipt_widget`**, then fires the package-scoped broadcast
-   `com.example.receipt.UPDATE_WIDGET`.
+   `com.upitracker.app.UPDATE_WIDGET`.
 3. `onReceive` triggers `onUpdate` for all widget instances, which re-render from the
    stored snapshot.
 

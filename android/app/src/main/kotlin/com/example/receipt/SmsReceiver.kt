@@ -1,4 +1,4 @@
-package com.example.receipt
+package com.upitracker.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,7 +9,7 @@ import android.util.Log
 class SmsReceiver : BroadcastReceiver() {
     companion object {
         const val TAG = "SmsReceiver"
-        const val ACTION_SMS = "com.example.receipt.SMS_RECEIVED"
+        const val ACTION_SMS = "com.upitracker.app.SMS_RECEIVED"
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {

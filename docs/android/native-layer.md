@@ -20,7 +20,7 @@ The app is Android-only in practice (notification listener + SMS are Android API
 | `.MainActivity` | activity | exported, `singleTop`, launcher |
 | `.UpiNotificationListener` | service | guarded by `BIND_NOTIFICATION_LISTENER_SERVICE`, intent filter `NotificationListenerService` |
 | `.SmsReceiver` | receiver | guarded by `BROADCAST_SMS`, intent filter `SMS_RECEIVED` priority 999 |
-| `.SpendingWidgetProvider` | receiver | `APPWIDGET_UPDATE` + custom `com.example.receipt.UPDATE_WIDGET`; meta-data → `@xml/spending_widget_info` |
+| `.SpendingWidgetProvider` | receiver | `APPWIDGET_UPDATE` + custom `com.upitracker.app.UPDATE_WIDGET`; meta-data → `@xml/spending_widget_info` |
 
 Plus a `<queries>` block for `PROCESS_TEXT` and `flutterEmbedding=2`.
 
@@ -36,7 +36,7 @@ internal actions below.
 ### `UpiNotificationListener : NotificationListenerService`
 
 Filters `onNotificationPosted` by two package allowlists, then re-broadcasts internally
-as `com.example.receipt.NOTIFICATION_RECEIVED` with extras
+as `com.upitracker.app.NOTIFICATION_RECEIVED` with extras
 `{package, title, text, subText, timestamp = sbn.postTime}`. Extracts `EXTRA_TITLE`,
 `EXTRA_TEXT`, `EXTRA_BIG_TEXT` (bigText preferred), `EXTRA_SUB_TEXT`.
 `onNotificationRemoved` is a no-op.
@@ -56,7 +56,7 @@ BoI `org.boi.mobilebanking`, Indian Bank `com.infrasofttech.indianbank`.
 
 On the system `SMS_RECEIVED_ACTION`, extracts each message's
 `displayOriginatingAddress`, `displayMessageBody` and `timestampMillis`, then
-re-broadcasts internally as `com.example.receipt.SMS_RECEIVED` with extras
+re-broadcasts internally as `com.upitracker.app.SMS_RECEIVED` with extras
 `{sender, body, timestamp}`. No persistence in native code.
 
 ### `SpendingWidgetProvider : AppWidgetProvider`
@@ -79,7 +79,7 @@ design in [../features/home-widget.md](../features/home-widget.md).
 ## Gradle
 
 - [android/app/build.gradle.kts](../../android/app/build.gradle.kts):
-  `applicationId = com.example.receipt`, `minSdk = 26`, target/compile SDK from the
+  `applicationId = com.upitracker.app`, `minSdk = 26`, target/compile SDK from the
   Flutter plugin, Java/Kotlin 17. **Release builds sign with the debug key** (no
   release keystore configured). No dependencies beyond the Flutter plugin — the Kotlin
   sources use only platform APIs.

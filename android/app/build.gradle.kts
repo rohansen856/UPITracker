@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.receipt"
+    namespace = "com.upitracker.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.receipt"
+        applicationId = "com.upitracker.app"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

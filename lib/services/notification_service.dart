@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 
 class NotificationService {
-  static const _methodChannel = MethodChannel('com.example.receipt/methods');
-  static const _eventChannel = EventChannel('com.example.receipt/notifications');
+  static const _methodChannel = MethodChannel('com.upitracker.app/methods');
+  static const _eventChannel = EventChannel('com.upitracker.app/notifications');
 
   Stream<Map<String, dynamic>>? _notificationStream;
 

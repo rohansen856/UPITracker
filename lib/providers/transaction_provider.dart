@@ -522,7 +522,7 @@ class TransactionProvider extends ChangeNotifier {
       'spark7d': _last7dSpending,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
-    const MethodChannel('com.example.receipt/methods')
+    const MethodChannel('com.upitracker.app/methods')
         .invokeMethod('updateWidget', payload)
         .catchError((_) => null);
   }

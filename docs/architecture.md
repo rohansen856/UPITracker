@@ -23,8 +23,8 @@ UPI Tracker has four cooperating layers:
 flowchart TD
     notif["UPI app / bank notification"] --> listener["UpiNotificationListener (Kotlin)"]
     sms["Incoming bank SMS"] --> receiver["SmsReceiver (Kotlin)"]
-    listener -->|"EventChannel com.example.receipt/notifications"| provider["TransactionProvider"]
-    receiver -->|"EventChannel com.example.receipt/sms"| provider
+    listener -->|"EventChannel com.upitracker.app/notifications"| provider["TransactionProvider"]
+    receiver -->|"EventChannel com.upitracker.app/sms"| provider
     provider --> prefilter{"UpiParser.isUpiRelated?"}
     prefilter -->|no| dropKw["drop"]
     prefilter -->|yes| mlgate{"MessagePipeline.evaluate"}
