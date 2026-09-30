@@ -56,13 +56,14 @@ class RemoteDatabase {
 
   String _extractUsername(String url) {
     final uri = Uri.parse(url.replaceFirst('postgresql://', 'http://'));
-    return uri.userInfo.split(':').first;
+    return Uri.decodeComponent(uri.userInfo.split(':').first);
   }
 
   String _extractPassword(String url) {
     final uri = Uri.parse(url.replaceFirst('postgresql://', 'http://'));
     final parts = uri.userInfo.split(':');
-    return parts.length > 1 ? parts.sublist(1).join(':') : '';
+    // Credentials in a connection URL are percent-encoded (e.g. %40 for @).
+    return parts.length > 1 ? Uri.decodeComponent(parts.sublist(1).join(':')) : '';
   }
 
   Future<void> _ensureTables() async {
