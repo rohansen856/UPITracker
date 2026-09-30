@@ -164,7 +164,16 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             trailing: provider.isLoading
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.chevron_right),
-            onTap: provider.isLoading ? null : () => provider.scanSmsHistory(),
+            onTap: provider.isLoading
+                ? null
+                : () async {
+                    await provider.scanSmsHistory();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(provider.error ?? 'SMS scan complete')),
+                      );
+                    }
+                  },
           ),
 
           _buildSectionHeader(context, 'Cloud Sync'),
