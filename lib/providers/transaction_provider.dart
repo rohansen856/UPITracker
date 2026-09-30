@@ -456,10 +456,10 @@ class TransactionProvider extends ChangeNotifier {
       );
       _last7dSpending = _bucketDailySpending(dailyRows, now);
 
-      // Count of transactions (both directions) in the past 24h — used by the widget.
-      _last24hCount = _transactions
-          .where((t) => t.transactionDate.isAfter(last24hStart))
-          .length;
+      // Count of transactions (both directions) in the past 24h — used by the
+      // widget. Read from the DB: _transactions carries the user's list
+      // filters, which the 24h amounts above do not.
+      _last24hCount = await _localDb.getTransactionCount(fromDate: last24hStart, toDate: now);
 
       notifyListeners();
       _refreshWidget();

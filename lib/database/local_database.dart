@@ -308,9 +308,20 @@ class LocalDatabase {
     return result;
   }
 
-  Future<int> getTransactionCount() async {
+  Future<int> getTransactionCount({DateTime? fromDate, DateTime? toDate}) async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) as count FROM transactions');
+    final where = <String>[];
+    final args = <Object?>[];
+    if (fromDate != null) {
+      where.add('transaction_date >= ?');
+      args.add(fromDate.toIso8601String());
+    }
+    if (toDate != null) {
+      where.add('transaction_date <= ?');
+      args.add(toDate.toIso8601String());
+    }
+    final clause = where.isEmpty ? '' : ' WHERE ${where.join(' AND ')}';
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM transactions$clause', args);
     return (result.first['count'] as int?) ?? 0;
   }
 
