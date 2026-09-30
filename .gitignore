@@ -56,3 +56,5 @@ app.*.map.json
 data/*
 !data/.gitkeep
 !data/README.md
+# Python bytecode
+__pycache__/
