@@ -159,6 +159,17 @@ class UpiParser {
   static TransactionType? _detectType(String text) {
     final t = text.toLowerCase();
 
+    // The explicit settlement verbs describe what happened to the holder's
+    // account and outrank the weaker keywords below. When both appear the
+    // earlier one wins: "A/c debited and Rs.X added to your UPI Lite" is a
+    // debit, "Rs.X credited to a/c ... debited from VPA" is a credit.
+    final debitedAt = t.indexOf('debited');
+    final creditedAt = t.indexOf('credited');
+    if (debitedAt >= 0 && (creditedAt < 0 || debitedAt < creditedAt)) {
+      return TransactionType.debit;
+    }
+    if (creditedAt >= 0) return TransactionType.credit;
+
     // Check credit first since "credited" is more specific than "credit"
     final creditPatterns = [
       'credited', 'received', 'credit', 'refund', 'cashback',

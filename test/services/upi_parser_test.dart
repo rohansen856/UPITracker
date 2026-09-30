@@ -752,4 +752,35 @@ void main() {
       expect(UpiParser.isUpiRelated("You've paid via PhonePe wallet"), isTrue);
     });
   });
+
+  group('Direction precedence of settlement verbs', () {
+    test('UPI Lite top-up ("debited and ... added to your UPI Lite") is a debit', () {
+      final p = UpiParser.parseSms(
+        sender: 'JD-INDBNK-S',
+        body:
+            'A/c *1234 debited and Rs.500.00 added to your UPI Lite on axis bank ocl App. RRN:111122223333.Not you?SMS BLOCK to 9000000000 -Indian Bank',
+      );
+      expect(p.isValid, isTrue);
+      expect(p.type, TransactionType.debit);
+      expect(p.amount, 500.00);
+    });
+
+    test('earlier "credited" wins over a later "debited"', () {
+      final p = UpiParser.parseSms(
+        sender: 'BV-INDBNK-S',
+        body:
+            'Rs.250.00 credited to a/c *1234 on 01/10/26 by a/c linked to VPA someone@ybl, debited from their account. RRN 444455556666 -Indian Bank',
+      );
+      expect(p.type, TransactionType.credit);
+    });
+
+    test('earlier "debited" wins over a later "credited"', () {
+      final p = UpiParser.parseSms(
+        sender: 'VM-SBIUPI-S',
+        body:
+            'A/c X1234 debited by 75.00 on date 01Oct26 and credited to VPA shop@okaxis Refno 777788889999 -SBI',
+      );
+      expect(p.type, TransactionType.debit);
+    });
+  });
 }
