@@ -16,6 +16,12 @@ import '../services/ml/message_pipeline.dart';
 
 class TransactionProvider extends ChangeNotifier {
   static const _startDateKey = 'tracking_start_date';
+  static const _liveMonitoringKey = 'live_monitoring_enabled';
+  static const _smsWatermarkKey = 'sms_scan_watermark_ms';
+
+  /// `Telephony.Sms.TYPE` value for received messages; sent/draft/outbox
+  /// rows share the same content URI and must not be ingested.
+  static const _smsTypeInbox = 1;
 
   final LocalDatabase _localDb = LocalDatabase();
   final RemoteDatabase _remoteDb = RemoteDatabase();
@@ -83,6 +89,10 @@ class TransactionProvider extends ChangeNotifier {
   }
   SyncService get syncService => _syncService;
   bool get isListening => _isListening;
+
+  /// False when the bundled classifiers failed to load. The pipeline then
+  /// fails open (spam and non-transactional messages are not filtered).
+  bool get filtersLoaded => MessagePipeline.instance.isLoaded;
   bool get isSyncing => _syncService.isSyncing;
   DateTime? get startDate => _startDate;
 
@@ -107,11 +117,24 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _loadStartDate();
-    // Load the stacked classifier weights in parallel with first DB reads.
-    // Failures are swallowed inside MessagePipeline (fail-open).
-    unawaited(MessagePipeline.instance.load());
+    // The classifiers must be resident before anything is evaluated: an
+    // unloaded model fails open and would let spam straight through.
+    await MessagePipeline.instance.load();
+    if (!MessagePipeline.instance.isLoaded) {
+      debugPrint('[pipeline] classifiers failed to load — filtering disabled');
+    }
     await loadTransactions();
     await loadSummary();
+
+    // Live monitoring is a persisted preference (on by default) rather than
+    // a per-session toggle, otherwise nothing is captured after a restart.
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_liveMonitoringKey) ?? true) {
+      await startListening(persist: false);
+    }
+    // SMS that arrived while the app was not running are still in the
+    // provider; pick them up silently.
+    unawaited(_catchUpSms());
     _syncService.startPeriodicSync();
   }
 
@@ -135,20 +158,44 @@ class TransactionProvider extends ChangeNotifier {
     await loadSummary();
   }
 
-  Future<void> startListening() async {
+  Future<void> startListening({bool persist = true}) async {
     if (_isListening) return;
     _isListening = true;
 
-    _notifSub = _notificationService.notificationStream.listen(_handleNotification);
-    _smsSub = _smsService.incomingSmsStream.listen(_handleSms);
+    _notifSub = _notificationService.notificationStream.listen(
+      _handleNotification,
+      onError: _onCaptureError,
+    );
+    _smsSub = _smsService.incomingSmsStream.listen(
+      _handleSms,
+      onError: _onCaptureError,
+    );
 
+    if (persist) await _persistLiveMonitoring(true);
     notifyListeners();
   }
 
-  void stopListening() {
+  void stopListening({bool persist = true}) {
     _notifSub?.cancel();
     _smsSub?.cancel();
+    _notifSub = null;
+    _smsSub = null;
     _isListening = false;
+    if (persist) unawaited(_persistLiveMonitoring(false));
+    notifyListeners();
+  }
+
+  Future<void> _persistLiveMonitoring(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_liveMonitoringKey, enabled);
+  }
+
+  /// An event-channel error ends the subscription; reflect that in the UI
+  /// instead of continuing to report "listening" while capture is dead.
+  void _onCaptureError(Object error) {
+    debugPrint('[capture] stream error: $error');
+    stopListening(persist: false);
+    _error = 'Live monitoring stopped: $error';
     notifyListeners();
   }
 
@@ -266,71 +313,13 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final messages = await _smsService.readSmsHistory(limit: 500);
-      int added = 0;
-
-      int skippedSpam = 0;
-      int skippedNonTx = 0;
-      for (final msg in messages) {
-        final body = msg['body'] as String? ?? '';
-        final sender = msg['sender'] as String? ?? '';
-        if (!UpiParser.isUpiRelated(body)) continue;
-
-        final decision = MessagePipeline.instance.evaluate(body);
-        if (!decision.shouldIngest) {
-          if (decision.stage == 'spam') {
-            skippedSpam++;
-          } else {
-            skippedNonTx++;
-          }
-          continue;
-        }
-
-        final parsed = UpiParser.parseSms(
-          sender: sender,
-          body: body,
-        );
-
-        if (!parsed.isValid) continue;
-
-        final timestamp = DateTime.fromMillisecondsSinceEpoch(
-          (msg['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
-        );
-
-        if (_startDate != null && timestamp.isBefore(_startDate!)) continue;
-
-        final dedupHash = _dedupService.generateDedupHash(parsed, body);
-        if (await _dedupService.isDuplicate(parsed, timestamp, dedupHash)) continue;
-
-        final record = TransactionRecord(
-          id: _uuid.v4(),
-          amount: parsed.amount!,
-          type: parsed.type!,
-          upiApp: parsed.upiApp,
-          upiTransactionId: parsed.upiTransactionId,
-          bankReference: parsed.bankReference,
-          counterpartyName: parsed.counterpartyName,
-          counterpartyUpiId: parsed.counterpartyUpiId,
-          accountInfo: parsed.accountInfo,
-          description: parsed.description,
-          source: 'sms',
-          rawText: body,
-          dedupHash: dedupHash,
-          transactionDate: timestamp,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        await _localDb.insertTransaction(record);
-        added++;
-      }
-
+      final r = await _ingestSmsHistory(limit: 500);
       await loadTransactions();
       await loadSummary();
       final parts = <String>[];
-      if (added > 0) parts.add('Found $added new transactions');
-      if (skippedSpam > 0) parts.add('filtered $skippedSpam spam');
-      if (skippedNonTx > 0) parts.add('skipped $skippedNonTx non-transactional');
+      if (r.added > 0) parts.add('Found ${r.added} new transactions');
+      if (r.skippedSpam > 0) parts.add('filtered ${r.skippedSpam} spam');
+      if (r.skippedNonTx > 0) parts.add('skipped ${r.skippedNonTx} non-transactional');
       _error = parts.isEmpty ? 'No new transactions found' : parts.join(' • ');
     } catch (e) {
       _error = 'SMS scan failed: $e';
@@ -338,6 +327,97 @@ class TransactionProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Ingests SMS received since the last scan watermark. Runs on startup so
+  /// messages that arrived while the app was not running are not lost.
+  Future<void> _catchUpSms() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final since = prefs.getInt(_smsWatermarkKey);
+      if (since == null) return; // never scanned: leave the first import to the user
+      final r = await _ingestSmsHistory(limit: 500, since: since);
+      if (r.added > 0) {
+        await loadTransactions();
+        await loadSummary();
+      }
+    } catch (e) {
+      debugPrint('[capture] SMS catch-up failed: $e');
+    }
+  }
+
+  Future<({int added, int skippedSpam, int skippedNonTx})> _ingestSmsHistory({
+    required int limit,
+    int? since,
+  }) async {
+    final messages = await _smsService.readSmsHistory(limit: limit, sinceTimestamp: since);
+    int added = 0;
+    int skippedSpam = 0;
+    int skippedNonTx = 0;
+    int watermark = since ?? 0;
+
+    for (final msg in messages) {
+      final ts = msg['timestamp'] as int?;
+      if (ts != null && ts > watermark) watermark = ts;
+      final type = msg['type'] as int?;
+      if (type != null && type != _smsTypeInbox) continue;
+
+      final body = msg['body'] as String? ?? '';
+      final sender = msg['sender'] as String? ?? '';
+      if (!UpiParser.isUpiRelated(body)) continue;
+
+      final decision = MessagePipeline.instance.evaluate(body, sender: sender);
+      if (!decision.shouldIngest) {
+        if (decision.stage == 'spam') {
+          skippedSpam++;
+        } else {
+          skippedNonTx++;
+        }
+        continue;
+      }
+
+      final parsed = UpiParser.parseSms(
+        sender: sender,
+        body: body,
+      );
+
+      if (!parsed.isValid) continue;
+
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+        (msg['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      );
+
+      if (_startDate != null && timestamp.isBefore(_startDate!)) continue;
+
+      final dedupHash = _dedupService.generateDedupHash(parsed, body);
+      if (await _dedupService.isDuplicate(parsed, timestamp, dedupHash)) continue;
+
+      final record = TransactionRecord(
+        id: _uuid.v4(),
+        amount: parsed.amount!,
+        type: parsed.type!,
+        upiApp: parsed.upiApp,
+        upiTransactionId: parsed.upiTransactionId,
+        bankReference: parsed.bankReference,
+        counterpartyName: parsed.counterpartyName,
+        counterpartyUpiId: parsed.counterpartyUpiId,
+        accountInfo: parsed.accountInfo,
+        description: parsed.description,
+        source: 'sms',
+        rawText: body,
+        dedupHash: dedupHash,
+        transactionDate: timestamp,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _localDb.insertTransaction(record);
+      added++;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_smsWatermarkKey, watermark);
+    return (added: added, skippedSpam: skippedSpam, skippedNonTx: skippedNonTx);
   }
 
   Future<void> loadTransactions() async {

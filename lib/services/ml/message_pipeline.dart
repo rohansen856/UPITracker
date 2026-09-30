@@ -76,6 +76,11 @@ class MessagePipeline {
     ]);
   }
 
+  bool get isLoaded =>
+      SpamFilter.instance.isLoaded &&
+      TransactionalClassifier.instance.isLoaded &&
+      DirectionClassifier.instance.isLoaded;
+
   // A 12-digit NPCI RRN/UTR next to a settlement verb is hard evidence that
   // money actually moved. Real-inbox sweeps showed the classifiers dropping
   // whole bank templates of this shape (e.g. "Your A/c *X is credited with

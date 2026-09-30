@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             icon: Icons.notifications_active_outlined,
             title: 'Notification Access',
             subtitle: _notifAccess
-                ? 'Granted — listening to UPI app notifications'
+                ? 'Granted — UPI app notifications can be captured'
                 : 'Required to read payment notifications',
             granted: _notifAccess,
             onTap: () => _notificationService.openNotificationAccessSettings(),
@@ -144,9 +144,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             secondary: Icon(Icons.sensors, color: cs.primary),
             title: const Text('Live Monitoring'),
             subtitle: Text(
-              provider.isListening
-                  ? 'Actively listening for new transactions'
-                  : 'Start to automatically capture payments',
+              !provider.filtersLoaded
+                  ? 'Spam filter failed to load — messages are not being filtered'
+                  : provider.isListening
+                      ? 'Actively listening for new transactions'
+                      : 'Start to automatically capture payments',
             ),
             value: provider.isListening,
             onChanged: (val) {
