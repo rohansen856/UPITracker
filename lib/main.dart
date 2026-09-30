@@ -10,7 +10,8 @@ import 'providers/transaction_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env');
+  // Optional: without a .env the app still runs, with cloud sync disabled.
+  await dotenv.load(fileName: '.env', isOptional: true);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
