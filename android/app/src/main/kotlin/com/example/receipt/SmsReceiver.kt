@@ -24,7 +24,10 @@ class SmsReceiver : BroadcastReceiver() {
 
             Log.d(TAG, "SMS from $sender: $body")
 
+            // Package-scoped: an implicit broadcast would hand every SMS body
+            // to any app that registers a receiver for this action.
             val broadcastIntent = Intent(ACTION_SMS).apply {
+                setPackage(context.packageName)
                 putExtra("sender", sender)
                 putExtra("body", body)
                 putExtra("timestamp", timestamp)

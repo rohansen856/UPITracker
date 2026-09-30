@@ -57,7 +57,9 @@ class UpiNotificationListener : NotificationListenerService() {
 
         Log.d(TAG, "UPI notification from $pkg: $content")
 
+        // Package-scoped so payment notifications are not delivered to other apps.
         val intent = Intent(ACTION_NOTIFICATION).apply {
+            setPackage(packageName)
             putExtra("package", pkg)
             putExtra("title", title)
             putExtra("text", content)
