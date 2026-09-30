@@ -21,8 +21,9 @@ class SyncService {
   bool get isSyncEnabled => dotenv.env['SYNC_ENABLED']?.toLowerCase() == 'true';
 
   int get syncIntervalMinutes {
-    final val = dotenv.env['SYNC_INTERVAL_MINUTES'];
-    return int.tryParse(val ?? '15') ?? 15;
+    // Zero or negative would make Timer.periodic spin in a tight loop.
+    final parsed = int.tryParse(dotenv.env['SYNC_INTERVAL_MINUTES'] ?? '');
+    return (parsed == null || parsed < 1) ? 15 : parsed;
   }
 
   void startPeriodicSync() {
