@@ -43,6 +43,8 @@ class DebtEntry {
     bool? settled,
     DateTime? settledAt,
     DateTime? updatedAt,
+    // `settledAt: null` means "keep"; set this to clear it when un-settling.
+    bool clearSettledAt = false,
   }) {
     return DebtEntry(
       id: id,
@@ -54,7 +56,7 @@ class DebtEntry {
       createdAt: createdAt,
       dueDate: dueDate ?? this.dueDate,
       settled: settled ?? this.settled,
-      settledAt: settledAt ?? this.settledAt,
+      settledAt: clearSettledAt ? null : (settledAt ?? this.settledAt),
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

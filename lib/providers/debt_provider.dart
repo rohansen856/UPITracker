@@ -126,6 +126,7 @@ class DebtProvider extends ChangeNotifier {
     final updated = existing.copyWith(
       settled: !existing.settled,
       settledAt: existing.settled ? null : now,
+      clearSettledAt: existing.settled,
       updatedAt: now,
     );
     await _db.updateDebt(updated);
