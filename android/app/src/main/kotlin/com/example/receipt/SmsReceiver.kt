@@ -22,7 +22,9 @@ class SmsReceiver : BroadcastReceiver() {
             val body = msg.displayMessageBody ?: ""
             val timestamp = msg.timestampMillis
 
-            Log.d(TAG, "SMS from $sender: $body")
+            // Never log message contents: logcat is readable via adb and by
+            // privileged apps, and these are bank SMS.
+            Log.d(TAG, "SMS received (${body.length} chars)")
 
             // Package-scoped: an implicit broadcast would hand every SMS body
             // to any app that registers a receiver for this action.

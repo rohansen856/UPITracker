@@ -55,7 +55,7 @@ class UpiNotificationListener : NotificationListenerService() {
         val content = bigText.ifEmpty { text }
         if (content.isEmpty()) return
 
-        Log.d(TAG, "UPI notification from $pkg: $content")
+        Log.d(TAG, "UPI notification from $pkg (${content.length} chars)")
 
         // Package-scoped so payment notifications are not delivered to other apps.
         val intent = Intent(ACTION_NOTIFICATION).apply {
