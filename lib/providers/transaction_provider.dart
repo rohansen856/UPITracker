@@ -193,7 +193,7 @@ class TransactionProvider extends ChangeNotifier {
     final sender = data['sender'] as String? ?? '';
     if (!UpiParser.isUpiRelated(body)) return;
 
-    final decision = MessagePipeline.instance.evaluate(body);
+    final decision = MessagePipeline.instance.evaluate(body, sender: sender);
     if (!decision.shouldIngest) {
       debugPrint('[pipeline] drop sms:$sender at ${decision.stage} — ${decision.reason}');
       return;

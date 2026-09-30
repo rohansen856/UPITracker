@@ -183,4 +183,52 @@ void main() {
           reason: 'wrong direction hint for "$body" → $d');
     }
   });
+
+  group('settlement evidence (RRN + settlement verb)', () {
+    // Template the classifiers drop on their own (p_tx ≈ 0.42) even though
+    // it is a completed credit; synthetic values only.
+    const credit =
+        'Your A/c *1234 is credited with Rs.55.00 on 03-10-26 by ASHA RAO. '
+        'RRN 217100000001. Available balance is Rs.900.00 -Indian Bank';
+
+    test('a registered bank header with an RRN is never dropped', () {
+      final d = MessagePipeline.instance.evaluate(credit, sender: 'VM-INDBNK-S');
+      expect(d.shouldIngest, isTrue);
+      expect(d.reason, 'settlement-evidence');
+    });
+
+    test('the same text from a raw phone number gets no bypass', () {
+      expect(
+        MessagePipeline.hasSettlementEvidence(credit, sender: '+919800000000'),
+        isFalse,
+      );
+      final d = MessagePipeline.instance.evaluate(credit, sender: '+919800000000');
+      expect(d.reason, isNot('settlement-evidence'));
+    });
+
+    test('notifications (no sender) qualify on text alone', () {
+      expect(
+        MessagePipeline.hasSettlementEvidence(
+            'Paid Rs.120 to Chai Point. UPI Ref No 512300000001'),
+        isTrue,
+      );
+    });
+
+    test('an RRN without a settlement verb is not evidence', () {
+      expect(
+        MessagePipeline.hasSettlementEvidence(
+            'Your complaint RRN 217100000001 has been registered',
+            sender: 'VM-INDBNK-S'),
+        isFalse,
+      );
+    });
+
+    test('a short reference number is not an RRN', () {
+      expect(
+        MessagePipeline.hasSettlementEvidence('Rs.10 credited. Ref No 12345',
+            sender: 'VM-INDBNK-S'),
+        isFalse,
+      );
+    });
+  });
 }

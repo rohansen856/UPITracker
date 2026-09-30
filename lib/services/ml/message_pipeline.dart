@@ -76,14 +76,42 @@ class MessagePipeline {
     ]);
   }
 
+  // A 12-digit NPCI RRN/UTR next to a settlement verb is hard evidence that
+  // money actually moved. Real-inbox sweeps showed the classifiers dropping
+  // whole bank templates of this shape (e.g. "Your A/c *X is credited with
+  // Rs.Y ... RRN Z" at p_tx≈0.42), so the models may not veto them.
+  static final RegExp _settlementRefRe = RegExp(
+    r'(?:\bRRN|\bUTR|\bRef\s*No\.?|\bRefno|\bUPI\s*Ref(?:\s*No)?|\bUPI)[\s:.\-]*\d{12}\b',
+    caseSensitive: false,
+  );
+  static final RegExp _settlementVerbRe = RegExp(
+    r'\b(?:credited|debited|debit|credit|sent|received|paid)\b',
+    caseSensitive: false,
+  );
+
+  // DLT-registered SMS headers ("JD-SBIUPI-S", "VM-INDBNK"). Raw phone
+  // numbers are excluded so an SMS from an arbitrary sender cannot bypass the
+  // models just by quoting an RRN.
+  static final RegExp _registeredHeaderRe = RegExp(r'^[A-Z]{2}-[A-Za-z0-9]{3,9}(?:-[STG])?$');
+
+  /// Whether [text] carries hard settlement evidence. [sender] is the SMS
+  /// sender id; pass null for notifications, which are already limited to an
+  /// allowlist of payment-app packages on the native side.
+  @visibleForTesting
+  static bool hasSettlementEvidence(String text, {String? sender}) {
+    if (sender != null && !_registeredHeaderRe.hasMatch(sender)) return false;
+    return _settlementRefRe.hasMatch(text) && _settlementVerbRe.hasMatch(text);
+  }
+
   /// Runs the full cascade and returns a structured decision.
-  PipelineDecision evaluate(String text) {
+  PipelineDecision evaluate(String text, {String? sender}) {
     final spam = SpamFilter.instance;
     final tx = TransactionalClassifier.instance;
     final dir = DirectionClassifier.instance;
+    final settled = hasSettlementEvidence(text, sender: sender);
 
     final pSpam = spam.isLoaded ? spam.spamProbability(text) : 0.0;
-    if (spam.isLoaded && pSpam >= spam.defaultThreshold) {
+    if (!settled && spam.isLoaded && pSpam >= spam.defaultThreshold) {
       return PipelineDecision(
         shouldIngest: false,
         stage: 'spam',
@@ -94,7 +122,7 @@ class MessagePipeline {
     }
 
     final pTx = tx.isLoaded ? tx.transactionalProbability(text) : 1.0;
-    if (tx.isLoaded && pTx < tx.defaultThreshold) {
+    if (!settled && tx.isLoaded && pTx < tx.defaultThreshold) {
       return PipelineDecision(
         shouldIngest: false,
         stage: 'transactional',
@@ -117,7 +145,7 @@ class MessagePipeline {
     return PipelineDecision(
       shouldIngest: true,
       stage: 'passed',
-      reason: 'ok',
+      reason: settled ? 'settlement-evidence' : 'ok',
       spamProbability: pSpam,
       transactionalProbability: pTx,
       directionHint: direction,
