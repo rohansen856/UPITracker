@@ -67,6 +67,9 @@ Exposed as `SmsService.incomingSmsStream`.
 
 ## Internal broadcast actions (native-only)
 
+All three are sent with `setPackage(packageName)`, so no other app receives them. The two
+capture receivers are also registered `RECEIVER_NOT_EXPORTED` on API 33+.
+
 | Action | Fired by | Consumed by |
 |---|---|---|
 | `com.upitracker.app.NOTIFICATION_RECEIVED` | `UpiNotificationListener` | MainActivity's notifications event-channel receiver |

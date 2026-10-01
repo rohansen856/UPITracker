@@ -11,7 +11,17 @@ The app is Android-only in practice (notification listener + SMS are Android API
 
 **Permissions:** `READ_SMS`, `RECEIVE_SMS`, `ACCESS_FINE_LOCATION`,
 `ACCESS_COARSE_LOCATION`, `INTERNET`, `ACCESS_NETWORK_STATE`,
-`RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`. (Debug manifest adds only `INTERNET`.)
+`RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` (the last two are currently unused: there
+is no boot receiver or foreground service). (Debug manifest adds only `INTERNET`.)
+
+**Backup:** `allowBackup="false"`, `fullBackupContent="false"` and
+`dataExtractionRules="@xml/data_extraction_rules"` (excludes every domain from cloud
+backup and device transfer). The database holds raw bank SMS and locations, so it is
+never copied off the device by Android backup; a new phone starts empty unless cloud
+sync is enabled.
+
+**Package naming:** the Kotlin sources live under `kotlin/com/example/receipt/` but
+declare `package com.upitracker.app`, matching `namespace` and `applicationId`.
 
 **Components:**
 
@@ -35,11 +45,13 @@ internal actions below.
 
 ### `UpiNotificationListener : NotificationListenerService`
 
-Filters `onNotificationPosted` by two package allowlists, then re-broadcasts internally
-as `com.upitracker.app.NOTIFICATION_RECEIVED` with extras
+Filters `onNotificationPosted` by two package allowlists, then re-broadcasts as
+`com.upitracker.app.NOTIFICATION_RECEIVED`, **package-scoped** (`setPackage`) so only this
+app's receiver gets it, with extras
 `{package, title, text, subText, timestamp = sbn.postTime}`. Extracts `EXTRA_TITLE`,
 `EXTRA_TEXT`, `EXTRA_BIG_TEXT` (bigText preferred), `EXTRA_SUB_TEXT`.
-`onNotificationRemoved` is a no-op.
+`onNotificationRemoved` is a no-op. Logs carry the package name and text length only,
+never the content.
 
 **`UPI_PACKAGES` (10):** GPay `com.google.android.apps.nbu.paisa.user`, Paytm
 `net.one97.paytm`, PhonePe `com.phonepe.app`, BHIM `in.org.npci.upiapp`, WhatsApp
@@ -56,8 +68,10 @@ BoI `org.boi.mobilebanking`, Indian Bank `com.infrasofttech.indianbank`.
 
 On the system `SMS_RECEIVED_ACTION`, extracts each message's
 `displayOriginatingAddress`, `displayMessageBody` and `timestampMillis`, then
-re-broadcasts internally as `com.upitracker.app.SMS_RECEIVED` with extras
-`{sender, body, timestamp}`. No persistence in native code.
+re-broadcasts as `com.upitracker.app.SMS_RECEIVED`, **package-scoped** (`setPackage`), with
+extras `{sender, body, timestamp}`. Logs carry only the body length. No persistence in
+native code: SMS that arrive while the app is not running reach Dart only through the
+startup catch-up scan.
 
 ### `SpendingWidgetProvider : AppWidgetProvider`
 
