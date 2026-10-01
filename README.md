@@ -21,11 +21,13 @@ database, so the ledger stays clean.
   provided `data/upi*.csv` files (SBI debits/credits, HDFC "Sent Rs.", ICICI,
   Axis, Kotak, PNB, GPay, PhonePe, Paytm, Paytm, NEFT receipts, etc.).
 - **Deduplication** — same payment from notification + SMS is recorded
-  once. Primary key is UPI ref / bank ref when present, otherwise a hash of
-  `amount + 10-minute window + counterparty`.
+  once. The stored key is an MD5 of the UPI transaction id, else the bank
+  reference, else the normalised message body; a separate fuzzy tier
+  compares amount, direction, counterparty and a ±10-minute window
+  (see `docs/features/deduplication.md`).
 - **Offline-first** — SQLite is authoritative; Postgres (Neon) is a
-  backup. Sync is bidirectional-safe (remote deletions trigger
-  re-sync, not silent loss).
+  push-only backup: rows are upserted to the remote and never read back,
+  and local deletes are not propagated (see `docs/features/sync.md`).
 - **Location tagging** (optional), **editable notes + tags**, **start-date
   gate** (ignore SMS before a user-configured cutoff).
 - **Analytics** — daily trend, totals, category / merchant breakdown,
@@ -55,7 +57,7 @@ incoming SMS / notification
                             │ passes
                             ▼
 ┌────────────── Layer 2 : transactional classifier ────────┐
-│  assets/transactional_model.json — 157.0 KB              │
+│  assets/transactional_model.json — 158.9 KB              │
 │  Threshold 0.5 (P=1.000, R=1.000 on held-out)            │
 │  Drops OTPs, balance alerts, bill reminders, card spend  │
 │  alerts, declined / failed transactions, non-finance     │
@@ -64,7 +66,7 @@ incoming SMS / notification
                             │ passes
                             ▼
 ┌──────────────── Layer 3 : direction classifier ──────────┐
-│  assets/direction_model.json — 33.7 KB, 641 features     │
+│  assets/direction_model.json — 38.1 KB, 731 features     │
 │  P(credit) vs P(debit). Used as a second opinion —       │
 │  parser stays authoritative; disagreements are logged.   │
 └───────────────────────────┬──────────────────────────────┘
@@ -131,7 +133,13 @@ python3 scripts/generate_ml_fixtures.py   # regenerate Dart parity fixtures
 ### Corpus-wide sweep on 382 real UPI SMS (`data/upi*.csv`)
 
 Measured by `test/accuracy/corpus_accuracy_test.dart` and
-`test/accuracy/model_consistency_test.dart`:
+`test/accuracy/model_consistency_test.dart`. These figures are on the
+**training** corpus. On an independent real inbox (audit, 2026-10-06) the
+classifiers alone dropped two bank templates entirely (12 real
+transactions); the settlement-evidence rule in `MessagePipeline` now
+prevents that. The held-out numbers above and those in
+`docs/ml-training.md` disagree and need regenerating from a pinned run
+(see `AUDIT/DOCUMENTATION_AUDIT.md`, DOC7).
 
 | Metric                                                      | Value        |
 |-------------------------------------------------------------|--------------|
@@ -211,7 +219,7 @@ lib/
 │   ├── dedup_service.dart                     # hash-based dedup
 │   ├── notification_service.dart              # NotificationListenerService bridge
 │   ├── sms_service.dart                       # SMS receiver + history scan
-│   ├── sync_service.dart                      # bidirectional-safe sync
+│   ├── sync_service.dart                      # push-only sync to Postgres
 │   ├── location_service.dart
 │   └── ml/
 │       ├── tfidf_logreg.dart                  # shared inference engine
