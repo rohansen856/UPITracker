@@ -62,8 +62,11 @@ CANARA, INDIAN → `indianbank`. Unknown senders → `null` → caller uses `ban
 
 ### Direction (`_detectType`)
 
-Lowercased keyword scan, **credit checked first** ("credited" is more specific than
-"credit"):
+Lowercased keyword scan. The account settlement verbs come first: if `debited` and/or
+`credited` occur, **the earlier one decides** ("A/c debited and Rs.X added to your UPI
+Lite" is a debit; "Rs.X credited to a/c … debited from VPA …" is a credit). Otherwise
+the weaker keyword lists apply, **credit checked first** ("credited" is more specific
+than "credit"):
 
 - credit: `credited, received, credit, refund, cashback, received from,
   money received, you received, added to`

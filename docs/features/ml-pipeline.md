@@ -23,8 +23,27 @@ flowchart TD
 ```
 
 Why stacked instead of one model: spam, "not a completed transaction" and direction are
-three different problems needing different thresholds; ~98% of decisions short-circuit
-at layer 1 (~5 µs/message); each model can be retrained independently.
+three different problems needing different thresholds, and each model can be retrained
+independently. Inference is cheap: all three models load in ~160 ms on a mid-range
+device (debug build) and scoring thousands of messages takes well under a second.
+
+### Settlement evidence overrides the veto
+
+The classifiers were trained mostly on generic SMS corpora. On a real inbox they dropped
+two complete bank templates — "Your A/c *X is credited with Rs.Y … RRN Z" (p_tx ≈ 0.42)
+and "A/c debited and Rs.Y added to your UPI Lite on npci App. RRN:Z" (p_spam = 0.85) —
+losing every incoming credit in that format. `MessagePipeline.hasSettlementEvidence`
+therefore lets a message through regardless of the model scores when it has
+
+- a 12-digit NPCI reference after `RRN`, `UTR`, `Ref No`, `Refno`, `UPI Ref` or `UPI`, **and**
+- a settlement verb (`credited`, `debited`, `debit`, `credit`, `sent`, `received`, `paid`), **and**
+- for SMS, a DLT-registered sender header (`XX-NAME` or `XX-NAME-S/T/G`); raw phone
+  numbers never qualify. Notifications (no sender) qualify on text alone because they are
+  already limited to the payment-app allowlist.
+
+Such decisions have `stage = 'passed'`, `reason = 'settlement-evidence'`. On the audit
+inbox (3,901 SMS) the rule recovered exactly the 12 dropped real transactions and changed
+no other decision.
 
 ## `TfidfLogReg` (shared engine)
 
@@ -87,10 +106,14 @@ enum TxDirection { debit, credit }
 ## `MessagePipeline`
 
 - `MessagePipeline.instance.load()` — loads all three models in parallel
-  (`Future.wait`); idempotent; failures swallowed.
-- `evaluate(String text) → PipelineDecision`:
-  1. Spam stage — drop if loaded and `pSpam >= 0.85`. Unloaded → `pSpam = 0.0`.
-  2. Transactional stage — drop if loaded and `pTx < 0.5`. Unloaded → `pTx = 1.0`.
+  (`Future.wait`); idempotent; failures swallowed. `isLoaded` reports whether all three
+  are resident; the provider awaits `load()` before capture starts and Settings shows a
+  warning when it is false.
+- `evaluate(String text, {String? sender}) → PipelineDecision`:
+  1. Spam stage — drop if loaded, `pSpam >= 0.85` and no settlement evidence.
+     Unloaded → `pSpam = 0.0`.
+  2. Transactional stage — drop if loaded, `pTx < 0.5` and no settlement evidence.
+     Unloaded → `pTx = 1.0`.
   3. Direction — `predict(confidence: 0.65)`: a hint is emitted only when reasonably
      confident, so disagreement warnings only fire on meaningful mismatches.
 

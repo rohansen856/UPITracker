@@ -2,7 +2,8 @@
 
 UPI Tracker is an offline-first Flutter app (Android-only in practice) that consolidates
 UPI payments across apps (GPay, PhonePe, Paytm, BHIM, …) and banks (SBI, HDFC, ICICI, …)
-into a single ledger by reading **notifications and SMS in real time**. A stacked
+into a single ledger by reading **notifications and SMS as they arrive** while the app
+process is running (SMS missed while it was closed are caught up on the next launch). A stacked
 three-layer on-device ML gate filters spam, OTPs and other non-transactional noise before
 anything is parsed and stored. SQLite is the source of truth; an optional Postgres (Neon)
 backup is kept in sync. The app also ships a manual **Debts & Lending** ledger and a
