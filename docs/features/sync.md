@@ -10,9 +10,23 @@ Postgres client.
 From `.env`:
 
 - `SYNC_ENABLED` — `'true'` (case-insensitive) enables sync (`isSyncEnabled`).
-- `SYNC_INTERVAL_MINUTES` — periodic interval, default **15**.
-- `DATABASE_URL` — Postgres URL; SSL is forced (`SslMode.require`); database name
-  defaults to `neondb` when absent (Neon assumption).
+- `SYNC_INTERVAL_MINUTES` — periodic interval, default **15**; missing, unparsable, zero or
+  negative values fall back to 15.
+- `DATABASE_URL` — Postgres URL; SSL is forced (`SslMode.require`, which encrypts but
+  does **not** verify the server certificate); database name defaults to `neondb` when
+  absent (Neon assumption). Username and password are percent-decoded; query parameters
+  (e.g. `channel_binding`) are ignored.
+
+`.env` is loaded with `isOptional: true`: without it the app runs with sync disabled.
+
+### Trust model
+
+There is no API between the app and the database. Every install connects directly with
+the **same** credential, which is packaged inside the APK (`.env` is a Flutter asset),
+and writes into **one shared `transactions` table with no user or device column**. Anyone
+holding an APK can read and modify every synced row, including raw SMS text and
+locations. Treat sync as unsafe for anything beyond a single trusted device until an
+authenticated API exists (see `AUDIT/SECURITY_AUDIT.md`, S1/S2).
 
 `startPeriodicSync()` (called from `TransactionProvider.initialize()`) runs an
 immediate `syncNow()` plus a `Timer.periodic`. `stopPeriodicSync()` cancels;

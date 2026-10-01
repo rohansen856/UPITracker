@@ -26,9 +26,9 @@ summaries reload:
 | `spent24h` / `received24h` | Rolling 24h totals |
 | `spentPrev24h` | Prior 24h window spend |
 | `deltaPct` (+ stored `hasDelta`) | Percent change vs yesterday, may be absent |
-| `count24h` | Transaction count |
+| `count24h` | Transaction count in the same 24h window, read from the DB (independent of list filters) |
 | `spark7d` | 7 daily debit values (stored as a JSON array string) |
-| `updatedAt` | Snapshot timestamp |
+| `updatedAt` | Snapshot timestamp (stored, not rendered) |
 
 ## Rendering
 
@@ -46,6 +46,8 @@ summaries reload:
 ## Configuration
 
 `res/xml/spending_widget_info.xml`: min 250x150dp (4x2 cells), resizable both axes,
-`updatePeriodMillis = 1800000` (30 min system refresh — mostly redundant since Flutter
-pushes on every summary reload while the app runs). Background: white → light-blue 135°
+`updatePeriodMillis = 1800000` (30 min system refresh). The system refresh only
+re-renders the **last pushed snapshot**: new figures arrive only while the app process is
+running. After a day without opening the app the widget still shows the old "last 24
+hours" totals, and `updatedAt` is not displayed, so there is no staleness signal. Background: white → light-blue 135°
 gradient with 22dp corners (`widget_background.xml`).

@@ -13,7 +13,10 @@ Optional, best-effort geotagging of live-captured transactions.
   `[name, subLocality, locality, administrativeArea]` with `", "`. A geocoding failure
   is tolerated — coordinates are still returned without a name.
 - `LocationData { latitude, longitude, name? }` is stored on the record as
-  `latitude` / `longitude` / `location_name`.
+  `latitude` / `longitude` / `location_name`, at full precision, and is **included in
+  cloud sync**.
+- The lookup is awaited inline before the record is inserted, so a slow fix delays a
+  live capture by up to 10 seconds.
 
 ## Where it applies
 

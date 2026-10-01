@@ -10,8 +10,9 @@
 
 ## Environment
 
-Create `.env` in the project root (it is bundled as a Flutter asset and loaded at
-startup by `flutter_dotenv`, so it must exist to run):
+Create `.env` in the project root. It is declared as a Flutter asset (so the build
+fails without the file) and loaded at startup by `flutter_dotenv` with
+`isOptional: true`:
 
 ```env
 DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
@@ -25,8 +26,11 @@ SYNC_INTERVAL_MINUTES=15
   offline; the Settings "Sync Now" tile shows "Sync is disabled in .env").
 - `SYNC_INTERVAL_MINUTES` — periodic sync interval (default 15).
 
-`.env` is gitignored. Note that bundling it as an asset means the credentials ship
-inside the APK.
+`.env` is gitignored, but because it is a Flutter asset **the database credentials ship
+in plaintext inside every APK** (`assets/flutter_assets/.env`). Anyone with the APK has
+full access to the shared remote database. Do not distribute builds with a real
+`DATABASE_URL`; set `SYNC_ENABLED=false` (or remove `.env` from `pubspec.yaml` assets) for
+any build that leaves your hands. See `AUDIT/SECURITY_AUDIT.md` (S1/S2).
 
 ## Install & run
 
