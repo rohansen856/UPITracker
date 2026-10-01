@@ -61,8 +61,9 @@ All four are fixed (C1 partially) or have an owner action listed.
 | S7 | HIGH | Debt ledger exported in plaintext to public storage behind the Play-restricted `MANAGE_EXTERNAL_STORAGE` (**fixed**). |
 | S13 | HIGH | The Entire CLI git hooks commit AI-session transcripts to a branch and push them with every `git push`. That is how S1 happened, and unpushed local branches already hold this session's SMS-derived content. **Delete them before your next push.** |
 
-Confirmed security findings: 13. Highly likely but not demonstrated: 1 (S9, TLS without
-certificate verification). Full detail: [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
+Confirmed security findings: 11. Highly likely but not demonstrated: 2 (S3, the inter-app
+broadcast leak, which is now fixed; S9, TLS without certificate verification). Full detail:
+[SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
 ## Counts
 
