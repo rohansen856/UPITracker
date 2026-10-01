@@ -309,7 +309,7 @@ class _HeroHeader extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           SizedBox(
-            height: 44,
+            height: 56,
             child: _Sparkline(values: spark, color: cs.primary),
           ),
           const SizedBox(height: 4),
@@ -380,10 +380,17 @@ class _TrendBadge extends StatelessWidget {
 }
 
 /// Lightweight 7-day bar sparkline. Highlights the tallest (busiest) day.
+/// Zero-value days render no bar; non-zero bars show a compact amount label.
 class _Sparkline extends StatelessWidget {
   final List<double> values;
   final Color color;
   const _Sparkline({required this.values, required this.color});
+
+  static String _compactAmount(double v) {
+    if (v >= 100000) return '₹${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '₹${(v / 1000).toStringAsFixed(1)}k';
+    return '₹${v.toStringAsFixed(0)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -394,11 +401,19 @@ class _Sparkline extends StatelessWidget {
       );
     }
     final maxVal = values.reduce((a, b) => a > b ? a : b);
+    if (maxVal == 0) {
+      return Center(
+        child: Text(
+          'No spending this week',
+          style: TextStyle(color: cs.outline, fontSize: 11),
+        ),
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
         final barSlot = totalWidth / values.length;
-        final barWidth = (barSlot * 0.62).clamp(4.0, 16.0);
+        final barWidth = (barSlot * 0.52).clamp(4.0, 16.0);
         return Stack(
           children: [
             Positioned(
@@ -412,15 +427,16 @@ class _Sparkline extends StatelessWidget {
               children: [
                 for (var i = 0; i < values.length; i++)
                   Expanded(
-                    child: Center(
-                      child: _Bar(
-                        width: barWidth,
-                        heightFactor: maxVal == 0 ? 0 : values[i] / maxVal,
-                        color: values[i] == maxVal && maxVal > 0
-                            ? color
-                            : color.withValues(alpha: 0.35),
-                      ),
-                    ),
+                    child: values[i] == 0
+                        ? const SizedBox.shrink()
+                        : _Bar(
+                            width: barWidth,
+                            heightFactor: values[i] / maxVal,
+                            color: values[i] == maxVal
+                                ? color
+                                : color.withValues(alpha: 0.35),
+                            label: _compactAmount(values[i]),
+                          ),
                   ),
               ],
             ),
@@ -435,20 +451,47 @@ class _Bar extends StatelessWidget {
   final double width;
   final double heightFactor;
   final Color color;
-  const _Bar({required this.width, required this.heightFactor, required this.color});
+  final String? label;
+  const _Bar({required this.width, required this.heightFactor, required this.color, this.label});
+
+  static const double _labelHeight = 12;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final h = (constraints.maxHeight * heightFactor).clamp(2.0, constraints.maxHeight);
-        return Container(
-          width: width,
-          height: h,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-          ),
+        // Reserve room for the amount label so the tallest bar plus its
+        // label still fits the sparkline's fixed height.
+        final maxH = (constraints.maxHeight - (label != null ? _labelHeight : 0))
+            .clamp(0.0, constraints.maxHeight);
+        final barH = (maxH * heightFactor).clamp(maxH < 6.0 ? maxH : 6.0, maxH);
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (label != null)
+              SizedBox(
+                height: _labelHeight,
+                child: Text(
+                  label!,
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                ),
+              ),
+            Container(
+              width: width,
+              height: barH,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              ),
+            ),
+          ],
         );
       },
     );
