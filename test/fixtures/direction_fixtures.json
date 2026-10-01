@@ -3,22 +3,22 @@
     {
       "text": "Dear UPI user A/C X0587 debited by 500.00 on date 16Apr26 trf to SANDIP MANDAL Refno 300900907330 If not u? call-1800111109 for other services-18001234-SBI",
       "label": "negative",
-      "probability": 0.017653589306211
+      "probability": 0.01765358930621097
     },
     {
       "text": "Dear UPI user A/C X0587 debited by 20.00 on date 06Apr26 trf to Universal Grocer Refno 300264030291 If not u? call-1800111109 for other services-18001234-SBI",
       "label": "negative",
-      "probability": 0.01662072849595477
+      "probability": 0.016620728495954744
     },
     {
       "text": "Sent Rs.1200.00 From HDFC Bank A/C x1234 To AMAZON PAY On 10/04/26 Ref 204060010123",
       "label": "negative",
-      "probability": 0.31726903959692776
+      "probability": 0.31726903959692787
     },
     {
       "text": "ICICI Bank Acct XX123 debited for Rs 250.00 on 10-Apr-26; UPI:604123456789.",
       "label": "negative",
-      "probability": 0.4092233277677496
+      "probability": 0.4092233277677495
     },
     {
       "text": "You paid Rs 250 to Zomato via UPI. UPI transaction ID 604123456800.",
@@ -38,7 +38,7 @@
     {
       "text": "You've paid Rs.207 via PhonePe gift card to SWIGGY on May 29, 2026 at 9:38:00 PM. Not you? Call us on 022-68727374. Remaining balance Rs.1534.",
       "label": "negative",
-      "probability": 0.1028013470090561
+      "probability": 0.10280134700905601
     },
     {
       "text": "Dear UPI User, your A/c XXXXXX0587-credited by Rs.200.00 on 16-04-26 transfer from DIVYANSHUSINGH Ref No 200038012233 -SBI",
@@ -63,7 +63,7 @@
     {
       "text": "Paytm: Received Rs 2000 from Priya. UPI ID priya@paytm. Txn ID 123456789012",
       "label": "positive",
-      "probability": 0.89449209768117
+      "probability": 0.8944920976811699
     },
     {
       "text": "NEFT credit of Rs.25000 received in your A/c XX1234 on 10-04-26 from RAKESH KUMAR, State Bank of India. Ref N123456789012.",

@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from ml_core import score_manual  # type: ignore  # noqa: E402
+from ml_core import score_manual, score_sklearn  # type: ignore  # noqa: E402
 
 ASSETS = ROOT / "assets"
 FIX = ROOT / "test" / "fixtures"
@@ -30,10 +30,20 @@ def _build(model_file: str, out_name: str, cases: list[dict]) -> None:
     model = json.loads((ASSETS / model_file).read_text(encoding="utf-8"))
     out = []
     for c in cases:
+        # The expected value comes from sklearn's transform. score_manual is
+        # the Python mirror of the Dart engine; it must agree with sklearn
+        # here or the mirror (and likely the Dart code) has drifted.
+        ref = score_sklearn(model, c["text"])
+        mirror = score_manual(model, c["text"])
+        if abs(ref - mirror) > 1e-6:
+            raise SystemExit(
+                f"{out_name}: score_manual drifted from sklearn on {c['text'][:60]!r}: "
+                f"{mirror} vs {ref}"
+            )
         out.append({
             "text": c["text"],
             "label": c["label"],
-            "probability": score_manual(model, c["text"]),
+            "probability": ref,
         })
     (FIX / out_name).write_text(
         json.dumps({"cases": out}, indent=2), encoding="utf-8",

@@ -355,6 +355,36 @@ def export_model(model: TrainedModel, out_path: Path, *, kind: str) -> None:
     print(f"    → wrote {out_path.relative_to(ROOT)} ({size_kb:.1f} KB, {len(model.vocab):,} features)")
 
 
+def score_sklearn(payload: dict, text: str) -> float:
+    """Reference probability computed by sklearn's own TF-IDF transform.
+
+    Rebuilds a TfidfVectorizer from the exported vocab/idf instead of
+    re-implementing the maths, so fixtures generated from it check the Dart
+    engine against sklearn rather than against a Python copy of the Dart
+    code. Empty preprocessed text is the one explicit guard shared by both
+    implementations (score 0.0) and is returned as such.
+    """
+    import numpy as np
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    clean = preprocess(text)
+    if not clean:
+        return 0.0
+    vec = TfidfVectorizer(
+        vocabulary=payload["vocab"],
+        ngram_range=(1, 2),
+        sublinear_tf=True,
+        norm="l2",
+        token_pattern=r"\S+",
+        lowercase=False,
+        dtype=np.float64,
+    )
+    vec.idf_ = np.asarray(payload["idf"], dtype=np.float64)
+    x = vec.transform([clean])
+    logit = float((x @ np.asarray(payload["weights"], dtype=np.float64))[0]) + float(payload["bias"])
+    return 1.0 / (1.0 + math.exp(-logit))
+
+
 def score_manual(payload: dict, text: str) -> float:
     """Pure-Python re-implementation of the Dart inference path.
     Used by fixture generators for numerical-parity tests.
