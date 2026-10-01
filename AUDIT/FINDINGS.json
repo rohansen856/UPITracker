@@ -1,0 +1,1533 @@
+[
+  {
+    "id": "S1",
+    "category": "security",
+    "severity": "CRITICAL",
+    "confidence": "CONFIRMED",
+    "title": "Production Postgres credential is public: bundled in every APK and committed to a public GitHub branch",
+    "component": "build config / git history",
+    "locations": [
+      "pubspec.yaml:40 (.env declared as a Flutter asset)",
+      "lib/main.dart:13",
+      "lib/database/remote_database.dart:16",
+      "commits 15627bb, e4abb6f (files a2/dbdc585fbd/0/full.jsonl, 4d/fbcc6b6e68/0/full.jsonl) on refs/heads/entire/checkpoints/v1"
+    ],
+    "evidence": [
+      "`unzip -l build/app/outputs/flutter-apk/app-debug.apk` lists assets/flutter_assets/.env (206 bytes) — reproduced this session",
+      "`git merge-base --is-ancestor <c> origin/entire/checkpoints/v1` true for both commits; `git ls-remote origin` shows the branch live",
+      "`gh repo view` reports the repository visibility as PUBLIC",
+      "`git grep` on those commits finds the database host and owner role name inside agent-transcript JSONL"
+    ],
+    "impact": "Anyone who downloads the APK or browses the public branch obtains owner-level read/write access to the shared production database containing every user's transactions, raw SMS text and geolocation.",
+    "actual_behavior": "DATABASE_URL (with password) ships in plaintext inside the APK and is readable on GitHub.",
+    "expected_behavior": "No database credential reaches the client or version control.",
+    "validation": "Static + artifact inspection + git/GitHub queries. Secret value deliberately not reproduced in this report.",
+    "recommended_fix": "1) Rotate the Neon password/role immediately. 2) Delete or rewrite refs/heads/entire/checkpoints/v1 on origin (requires force-push; owner decision) and purge caches. 3) Stop shipping .env as an asset; move sync behind an authenticated API (see S2). 4) Stop committing agent transcripts (.entire) to pushed branches.",
+    "documentation_impact": "docs/setup.md acknowledges credentials ship in the APK but presents it as a note, not a vulnerability; must be reworded once fixed.",
+    "status": "OPEN — requires owner action (rotation, history rewrite)"
+  },
+  {
+    "id": "S2",
+    "category": "security",
+    "severity": "CRITICAL",
+    "confidence": "CONFIRMED",
+    "title": "No server tier: the mobile client connects directly to Postgres; all installs write one shared, unpartitioned table",
+    "component": "lib/database/remote_database.dart",
+    "locations": [
+      "lib/database/remote_database.dart:13-40 (direct Connection.open)",
+      "lib/database/remote_database.dart:68-102 (schema: no user/device column)"
+    ],
+    "evidence": [
+      "Remote `transactions` DDL has no user_id/device_id column; upsert keyed only on record UUID",
+      "On-device DB pulled via `run-as`: all 118 local rows have synced=1 — the owner's real transactions are in the shared database"
+    ],
+    "impact": "Any install can read, modify or delete every other install's financial records; credential cannot be revoked per device.",
+    "actual_behavior": "Shared DB credential embedded in client; no authentication or authorization layer.",
+    "expected_behavior": "Per-user authenticated API with server-side authorization; database never reachable from clients.",
+    "validation": "Static review + device database inspection.",
+    "recommended_fix": "Introduce an API (e.g. serverless function) with per-user auth and row ownership; until then disable sync (SYNC_ENABLED=false) and remove .env from assets.",
+    "documentation_impact": "docs/architecture.md and docs/features/sync.md should state the trust model explicitly.",
+    "status": "OPEN — architectural decision"
+  },
+  {
+    "id": "S3",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "HIGH",
+    "title": "Captured SMS bodies and payment notifications were broadcast to every app on the device",
+    "component": "android native capture",
+    "locations": [
+      "android/app/src/main/kotlin/com/example/receipt/SmsReceiver.kt:32",
+      "android/app/src/main/kotlin/com/example/receipt/UpiNotificationListener.kt:67"
+    ],
+    "evidence": [
+      "Both use `sendBroadcast(Intent(ACTION))` with no setPackage() and no receiver permission",
+      "MainActivity.kt:53 already uses setPackage() for the widget broadcast, so the safe pattern was known",
+      "The notification allowlist includes com.whatsapp, so WhatsApp chat notifications were included"
+    ],
+    "impact": "Any installed app registering a runtime receiver for com.upitracker.app.SMS_RECEIVED/NOTIFICATION_RECEIVED receives every SMS (incl. OTPs) without READ_SMS.",
+    "actual_behavior": "Implicit, system-wide broadcast of message content.",
+    "expected_behavior": "Package-scoped delivery to the app's own receiver only.",
+    "validation": "Static. Not demonstrated with a third-party receiver (deliberately not built). Runtime-registered receivers still receive implicit broadcasts on Android 8+.",
+    "recommended_fix": "setPackage(packageName) on both intents — APPLIED.",
+    "documentation_impact": "docs/android/native-layer.md and platform-channels.md described these as 'internal' broadcasts; that is now accurate.",
+    "status": "FIXED"
+  },
+  {
+    "id": "S4",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Full SMS and notification text written to logcat in all build types",
+    "component": "android native capture",
+    "locations": [
+      "SmsReceiver.kt:25",
+      "UpiNotificationListener.kt:58",
+      "android/app/build.gradle.kts (no minify / log stripping)"
+    ],
+    "evidence": [
+      "`Log.d(TAG, \"SMS from $sender: $body\")` with no debug guard; release build has no R8/ProGuard rules"
+    ],
+    "impact": "Bank SMS, OTPs and (via the WhatsApp allowlist entry) chat messages are exposed to anyone with adb/logcat access and to bug-report captures.",
+    "actual_behavior": "Message bodies logged verbatim.",
+    "expected_behavior": "No message content in logs.",
+    "validation": "Static review.",
+    "recommended_fix": "Log only lengths/package names — APPLIED.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "S5",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Release builds are signed with the debug keystore",
+    "component": "android build",
+    "locations": [
+      "android/app/build.gradle.kts:29-33"
+    ],
+    "evidence": [
+      "`release { signingConfig = signingConfigs.getByName(\"debug\") }`"
+    ],
+    "impact": "Release artifacts are not distributable and can be re-signed/replaced by anyone holding the public debug key.",
+    "actual_behavior": "Debug signing for release.",
+    "expected_behavior": "Dedicated release keystore kept out of the repo.",
+    "validation": "Static.",
+    "recommended_fix": "Add a release signingConfig reading keystore path/passwords from local properties or CI secrets.",
+    "documentation_impact": "docs/android/native-layer.md states this; keep until fixed.",
+    "status": "OPEN — needs owner keystore"
+  },
+  {
+    "id": "S6",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Android backup enabled for a database of raw SMS text and geotags",
+    "component": "android manifest",
+    "locations": [
+      "android/app/src/main/AndroidManifest.xml:14-18 (no allowBackup / dataExtractionRules)"
+    ],
+    "evidence": [
+      "`dumpsys package com.example.receipt` shows ALLOW_BACKUP on the device",
+      "After the fix, the reinstalled com.upitracker.app no longer reports ALLOW_BACKUP"
+    ],
+    "impact": "Transaction history, raw bank SMS and locations are copied to cloud backup / device transfer outside the app's control.",
+    "actual_behavior": "allowBackup defaulted to true.",
+    "expected_behavior": "Backup disabled or explicitly scoped.",
+    "validation": "Verified on device before and after.",
+    "recommended_fix": "allowBackup=false, fullBackupContent=false, dataExtractionRules excluding all domains — APPLIED.",
+    "documentation_impact": "docs/android/native-layer.md updated.",
+    "status": "FIXED"
+  },
+  {
+    "id": "S7",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Debt ledger exported unencrypted to world-readable shared storage, requiring the Play-restricted MANAGE_EXTERNAL_STORAGE",
+    "component": "debt backup (staged, uncommitted feature)",
+    "locations": [
+      "lib/services/debt_backup_service.dart:11-29 (/storage/emulated/0/Documents)",
+      "android/app/src/main/AndroidManifest.xml:11-12 (staged)",
+      "lib/screens/debts_screen.dart:53"
+    ],
+    "evidence": [
+      "Hard-coded public Documents path; plaintext JSON of names, amounts, reasons, notes",
+      "Restore banner reads the same file on every Debts visit; after reinstall Android 11+ no longer treats the app as owner, so restore also depends on the restricted permission",
+      "export() had no error handling; readBackup() returned null for corrupt files (indistinguishable from 'no backup')"
+    ],
+    "impact": "Other apps with storage access can read the ledger; the permission is likely to block Play publication.",
+    "actual_behavior": "Public storage + All-files access.",
+    "expected_behavior": "App-private storage, no broad storage permission, explicit error reporting.",
+    "validation": "Static review.",
+    "recommended_fix": "Moved to getExternalStorageDirectory() (app-specific, no permission), removed both storage permissions, added DebtBackupException for write/corrupt-read failures — APPLIED. Trade-off: the backup no longer survives uninstall; SAF (user-chosen location) is the alternative if that matters.",
+    "documentation_impact": "docs/features/debts.md: backup section added.",
+    "status": "FIXED (behaviour change: no uninstall survival)"
+  },
+  {
+    "id": "S8",
+    "category": "security",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Precise per-purchase geolocation is synced to the shared, credential-exposed database",
+    "component": "sync",
+    "locations": [
+      "lib/database/remote_database.dart:84-86,142-144",
+      "lib/providers/transaction_provider.dart:231-253"
+    ],
+    "evidence": [
+      "latitude/longitude at full precision plus reverse-geocoded place name are in the remote upsert parameter map"
+    ],
+    "impact": "Combined with S1/S2, a public location history of the user's purchases.",
+    "actual_behavior": "Location synced by default.",
+    "expected_behavior": "Location kept local or coarsened, and only synced with consent.",
+    "validation": "Static.",
+    "recommended_fix": "Exclude or coarsen location fields in sync; make location tagging opt-in.",
+    "documentation_impact": "docs/features/location-tagging.md should state it is synced.",
+    "status": "OPEN"
+  },
+  {
+    "id": "S9",
+    "category": "security",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "TLS to Postgres does not verify the server certificate; channel_binding is dropped",
+    "component": "sync",
+    "locations": [
+      "lib/database/remote_database.dart:31",
+      "lib/database/remote_database.dart:42-66"
+    ],
+    "evidence": [
+      "SslMode.require (encrypt, no verification) is used; the hand-written URL parser ignores query parameters such as channel_binding=require"
+    ],
+    "impact": "A network attacker can MITM the database connection and capture the credential.",
+    "actual_behavior": "Encrypted but unauthenticated TLS.",
+    "expected_behavior": "verify-full semantics.",
+    "validation": "Static review of package:postgres settings.",
+    "recommended_fix": "Use SslMode.verifyFull; better, remove direct DB access (S2).",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "S10",
+    "category": "security",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Widget provider exported without a permission",
+    "component": "android manifest",
+    "locations": [
+      "android/app/src/main/AndroidManifest.xml:57-67"
+    ],
+    "evidence": [
+      "Accepts com.upitracker.app.UPDATE_WIDGET from any app"
+    ],
+    "impact": "Any app can force widget re-renders (no data exposure).",
+    "actual_behavior": "Unprotected exported receiver.",
+    "expected_behavior": "Restricted to the app.",
+    "validation": "Static.",
+    "recommended_fix": "Drop the custom action from the exported filter (MainActivity already sends it package-scoped) or protect it with a signature permission.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "S11",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Real bank SMS (account suffix, PAN fragment, balances, reference numbers, third-party names) committed to the public repository",
+    "component": "tests / fixtures / docs",
+    "locations": [
+      "test/services/upi_parser_test.dart",
+      "test/upi_parser_test.dart",
+      "test/fixtures/*.json",
+      "scripts/generate_ml_fixtures.py",
+      "test/integration/*.dart",
+      "test/services/dedup_service_test.dart",
+      "docs/features/upi-parser.md",
+      "lib/services/upi_parser.dart (comments)",
+      "refs/heads/entire/checkpoints/v1 (agent transcripts)"
+    ],
+    "evidence": [
+      "`git grep` on origin/main finds the owner's account-suffix pattern in 17 files and real 12-digit reference numbers in 13",
+      "Full names of real counterparties with amounts appear in 10 files on main",
+      "The checkpoint branch contains further raw SMS content",
+      ".gitignore explicitly excludes data/*.csv 'because they contain real SMS / personal data' — the same content was copied into fixtures"
+    ],
+    "impact": "Personal financial data of the owner and identifying data of third parties is publicly readable.",
+    "actual_behavior": "Real messages used as test data.",
+    "expected_behavior": "Synthetic test data only.",
+    "validation": "git grep against origin/main and the checkpoint branch.",
+    "recommended_fix": "Replace fixtures with synthetic messages preserving format; rewrite history or make the repository private (owner decision).",
+    "documentation_impact": "data/README.md should state the rule applies to fixtures too.",
+    "status": "OPEN — requires owner decision (history rewrite)"
+  },
+  {
+    "id": "S12",
+    "category": "security",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Unused privileged permissions declared",
+    "component": "android manifest",
+    "locations": [
+      "android/app/src/main/AndroidManifest.xml:9-10"
+    ],
+    "evidence": [
+      "RECEIVE_BOOT_COMPLETED and FOREGROUND_SERVICE are declared; no boot receiver or foreground service exists"
+    ],
+    "impact": "Larger permission surface than needed.",
+    "actual_behavior": "Declared but unused.",
+    "expected_behavior": "Least privilege.",
+    "validation": "grep of manifest and Kotlin sources.",
+    "recommended_fix": "Remove both, or implement the boot/foreground capture they imply (see C1).",
+    "documentation_impact": "docs/android/native-layer.md lists them.",
+    "status": "OPEN"
+  },
+  {
+    "id": "S13",
+    "category": "security",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Entire CLI git hooks copy session transcripts into a branch and push them with every push",
+    "component": "repository tooling",
+    "locations": [
+      ".git/hooks/prepare-commit-msg",
+      ".git/hooks/post-commit",
+      ".git/hooks/pre-push",
+      "refs/heads/entire/checkpoints/v1",
+      "refs/heads/entire/8475ac2-e3b0c4"
+    ],
+    "evidence": [
+      "post-commit condenses session data into the checkpoint branch when a commit carries an Entire-Checkpoint trailer; pre-push pushes those logs alongside the user's push",
+      "This mechanism produced S1 and part of S11",
+      "Unpushed local entire branches already contain this audit session's transcripts with the owner's account-suffix pattern (122 matches) and real reference numbers (67)"
+    ],
+    "impact": "Every future push can republish secrets and personal data from AI-assisted sessions to the public repository.",
+    "actual_behavior": "Transcripts committed and pushed automatically.",
+    "expected_behavior": "Session logs never leave the machine, or are scrubbed first.",
+    "validation": "Hook scripts read; git grep on local entire branches.",
+    "recommended_fix": "Owner: uninstall or reconfigure the Entire hooks (or disable its push); delete the local entire/* branches before the next push. Audit commits were made with hooks disabled.",
+    "documentation_impact": "None.",
+    "status": "OPEN — owner action before next push"
+  },
+  {
+    "id": "C1",
+    "category": "correctness",
+    "severity": "CRITICAL",
+    "confidence": "CONFIRMED",
+    "title": "Live capture is never running: Live Monitoring is a non-persisted per-session switch, and nothing is captured or caught up while the app is closed",
+    "component": "TransactionProvider / native capture",
+    "locations": [
+      "lib/providers/transaction_provider.dart:49,108-116,138-153",
+      "lib/screens/settings_screen.dart:143-159",
+      "android/app/src/main/kotlin/com/example/receipt/MainActivity.kt:63-117"
+    ],
+    "evidence": [
+      "startListening() is only called from the Settings switch; _isListening defaults to false and is not persisted",
+      "Native receivers forward to Dart only while MainActivity's dynamic receivers are registered; no queue",
+      "Device: app database holds 118 rows, all source=sms, all created in a single manual history scan; latest transaction ~2.5 months old; zero notification-sourced rows ever",
+      "Device: after launch the dashboard shows ₹0 / 0 transactions for the last 24h while the inbox has bank debits from the same day; Settings shows Live Monitoring OFF directly under 'Notification Access: Granted — listening to UPI app notifications'"
+    ],
+    "impact": "The core feature — automatic capture — does not work in normal use; this is the primary cause of the reported 'broken' behaviour.",
+    "actual_behavior": "Capture only while the user has manually flipped the switch in the current process; everything else lost.",
+    "expected_behavior": "Capture enabled by default and resumed after restarts; missed SMS recovered.",
+    "validation": "Device database inspection, UI dump, code trace.",
+    "recommended_fix": "APPLIED: persisted Live Monitoring preference (default on), auto-start on launch after models load, silent SMS catch-up from a persisted timestamp watermark, onError handling, truthful settings copy. REMAINING: notifications that arrive while the app is not running are still lost (needs a native persistent queue or a foreground service).",
+    "documentation_impact": "docs/features/transaction-capture.md and README 'real time' claim updated.",
+    "status": "PARTIALLY FIXED"
+  },
+  {
+    "id": "C2",
+    "category": "correctness",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Classifiers silently drop entire real-world bank SMS templates (incoming credits, UPI Lite top-ups)",
+    "component": "ML pipeline",
+    "locations": [
+      "lib/services/ml/message_pipeline.dart:80-105",
+      "assets/transactional_model.json",
+      "assets/spam_model.json"
+    ],
+    "evidence": [
+      "Sweep of the owner's 3,901-message inbox through the shipped models (corpus kept outside the repo): 1,781 UPI-related, 287 dropped at spam, 206 at transactional",
+      "Ground truth via DLT service headers + RRN: 12 real transactions dropped (₹14,146.07): every 'Your A/c *XXXX is credited with Rs.Y … RRN …' credit (7/7, p_tx 0.42–0.44) and every 'debited and Rs.Y added to your UPI Lite on npci App. RRN…' top-up (5/5, p_spam = 0.85 exactly at threshold)",
+      "Docs/README claim '100% ingested' — true only on the 382-message training corpus",
+      "Recall on bank/UPI service-header transactions was 98.8% overall, so the failure is template-specific, not global"
+    ],
+    "impact": "Incoming money in the affected formats never appears in the ledger.",
+    "actual_behavior": "Model veto overrides hard settlement evidence.",
+    "expected_behavior": "Messages proving a settled payment are never dropped by a probabilistic gate.",
+    "validation": "Real-inbox sweep before/after (harness outside the repo).",
+    "recommended_fix": "APPLIED: settlement-evidence rule — 12-digit RRN/UTR/UPI Ref + settlement verb from a DLT-registered header (or an allowlisted notification) bypasses the model veto. Re-sweep: exactly the 12 real transactions rescued, 0 previously-ingested messages dropped, no scam/mandate/collect message rescued. Retraining on real-inbox data was rejected because it would embed personal tokens in shipped weights.",
+    "documentation_impact": "docs/features/ml-pipeline.md documents the rule; README '100%' claim qualified.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C3",
+    "category": "correctness",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "UPI Lite top-ups recorded as income (wrong sign)",
+    "component": "UpiParser",
+    "locations": [
+      "lib/services/upi_parser.dart:159-181 (_detectType)"
+    ],
+    "evidence": [
+      "Credit keywords are matched first by substring; 'added to' (credit list) fires before 'debited' in 'A/c debited and Rs.X added to your UPI Lite'",
+      "Inbox sweep: 26 ingested messages flipped from credit to debit after the fix, all UPI Lite top-ups, ₹36,951.46 previously counted as received",
+      "Direction-model disagreements fell from 5 to 1 after the fix"
+    ],
+    "impact": "Spending under-reported and income over-reported by the top-up amounts.",
+    "actual_behavior": "First matching credit keyword wins.",
+    "expected_behavior": "'debited'/'credited' (account settlement verbs) take precedence, earliest wins.",
+    "validation": "Inbox sweep before/after; 3 regression tests, 2 of which fail on the old parser.",
+    "recommended_fix": "APPLIED.",
+    "documentation_impact": "docs/features/upi-parser.md direction section updated.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C4",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Model load was fire-and-forget (latent race with fail-open classifiers)",
+    "component": "TransactionProvider",
+    "locations": [
+      "lib/providers/transaction_provider.dart:112",
+      "lib/main.dart:33"
+    ],
+    "evidence": [
+      "`unawaited(MessagePipeline.instance.load())`; unloaded classifiers return spam=0.0, tx=true",
+      "Device measurement: all three models load in 161 ms (debug build) — unreachable in practice while capture required a manual toggle, but reachable once capture auto-starts (C1 fix)"
+    ],
+    "impact": "Messages evaluated during the window would bypass all filtering.",
+    "actual_behavior": "Race window ~161 ms.",
+    "expected_behavior": "Models resident before any evaluation.",
+    "validation": "Instrumented on-device timing (instrumentation reverted).",
+    "recommended_fix": "APPLIED: initialize() awaits load() before starting capture.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C5",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Classifier load failure is completely silent",
+    "component": "ML pipeline",
+    "locations": [
+      "lib/services/ml/tfidf_logreg.dart:54-56",
+      "lib/services/ml/message_pipeline.dart:71-77"
+    ],
+    "evidence": [
+      "Exceptions (incl. StateError for corrupt models) are caught and only debugPrinted; no UI anywhere showed load state"
+    ],
+    "impact": "If loading ever fails the app ingests spam/OTPs as transactions with no signal.",
+    "actual_behavior": "Silent fail-open.",
+    "expected_behavior": "Fail-open is reasonable, but must be visible.",
+    "validation": "Static; new tests prove missing/corrupt assets leave the engine unloaded.",
+    "recommended_fix": "APPLIED: MessagePipeline.isLoaded / provider.filtersLoaded surfaced in Settings.",
+    "documentation_impact": "docs/features/ml-pipeline.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C6",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "SMS history scan only reaches the 500 most recent SMS of any sender",
+    "component": "TransactionProvider / MainActivity",
+    "locations": [
+      "lib/providers/transaction_provider.dart:269",
+      "MainActivity.kt:128-164"
+    ],
+    "evidence": [
+      "readSmsHistory(limit: 500) without `since`; inbox on device has 3,901 messages"
+    ],
+    "impact": "Older transactions can never be imported.",
+    "actual_behavior": "Fixed 500-row window.",
+    "expected_behavior": "Paged import or date-bounded import.",
+    "validation": "Device inbox size + code.",
+    "recommended_fix": "Partially mitigated by the persisted catch-up watermark (C1); full-history import still needs paging off the main thread (see P2).",
+    "documentation_impact": "docs/features/transaction-capture.md.",
+    "status": "PARTIALLY FIXED"
+  },
+  {
+    "id": "C7",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "History scan also ingests sent/outbox SMS",
+    "component": "TransactionProvider",
+    "locations": [
+      "MainActivity.kt:130 (Telephony.Sms.CONTENT_URI)",
+      "lib/providers/transaction_provider.dart:263-330"
+    ],
+    "evidence": [
+      "Query covers all SMS types; the Dart side never checked `type`"
+    ],
+    "impact": "User's own outgoing messages can be parsed as transactions.",
+    "actual_behavior": "All SMS types.",
+    "expected_behavior": "Inbox (type 1) only.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED: skip non-inbox rows.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C8",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "EventChannel errors silently kill capture while the UI still reports 'listening'",
+    "component": "TransactionProvider",
+    "locations": [
+      "lib/providers/transaction_provider.dart:142-143"
+    ],
+    "evidence": [
+      "listen() without onError"
+    ],
+    "impact": "Capture stops permanently with no indication.",
+    "actual_behavior": "Dead subscription, _isListening stays true.",
+    "expected_behavior": "State reflects reality.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED: onError stops listening and reports the error.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C9",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "SYNC_INTERVAL_MINUTES of 0 or less spins Timer.periodic",
+    "component": "SyncService",
+    "locations": [
+      "lib/services/sync_service.dart:23-34"
+    ],
+    "evidence": [
+      "int.tryParse('0') returns 0, so the `?? 15` fallback never applies"
+    ],
+    "impact": "Tight sync loop hammering the database and battery.",
+    "actual_behavior": "0/negative accepted.",
+    "expected_behavior": "Clamped to a sane default.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED.",
+    "documentation_impact": "docs/features/sync.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C10",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Un-settling a debt leaves a stale settled_at",
+    "component": "DebtEntry / DebtProvider",
+    "locations": [
+      "lib/models/debt_entry.dart:57",
+      "lib/providers/debt_provider.dart:123-134"
+    ],
+    "evidence": [
+      "copyWith treats null as 'keep'"
+    ],
+    "impact": "Inconsistent rows (settled=0 with settled_at set).",
+    "actual_behavior": "Stale timestamp.",
+    "expected_behavior": "Cleared.",
+    "validation": "New test.",
+    "recommended_fix": "APPLIED: explicit clearSettledAt flag.",
+    "documentation_impact": "docs/data/models.md listed it as a quirk.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C11",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Widget 24h transaction count used the filtered list while amounts were unfiltered",
+    "component": "TransactionProvider",
+    "locations": [
+      "lib/providers/transaction_provider.dart:381-383"
+    ],
+    "evidence": [
+      "_last24hCount derived from _transactions (user filters applied)"
+    ],
+    "impact": "Widget count disagrees with its own totals when filters are active.",
+    "actual_behavior": "Mismatch.",
+    "expected_behavior": "Consistent.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED: count from the database for the same window.",
+    "documentation_impact": "docs/features/home-widget.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C12",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "HIGH",
+    "title": "Percent-encoded credentials in DATABASE_URL were not decoded",
+    "component": "RemoteDatabase",
+    "locations": [
+      "lib/database/remote_database.dart:57-66"
+    ],
+    "evidence": [
+      "userInfo used raw"
+    ],
+    "impact": "Passwords containing %XX fail to authenticate.",
+    "actual_behavior": "Raw.",
+    "expected_behavior": "Decoded.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C13",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Startup crashes if .env is absent",
+    "component": "main",
+    "locations": [
+      "lib/main.dart:13"
+    ],
+    "evidence": [
+      "dotenv.load without isOptional"
+    ],
+    "impact": "Removing the bundled .env (S1/S2 fix) would crash the app.",
+    "actual_behavior": "Throws.",
+    "expected_behavior": "App runs with sync disabled.",
+    "validation": "Static.",
+    "recommended_fix": "APPLIED: isOptional: true.",
+    "documentation_impact": "docs/setup.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "C14",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Local and remote disagree on transaction instants",
+    "component": "models / sync",
+    "locations": [
+      "lib/models/transaction_record.dart:50-75",
+      "lib/database/remote_database.dart:148-150"
+    ],
+    "evidence": [
+      "SQLite stores naive local ISO strings; Postgres receives DateTime into TIMESTAMPTZ"
+    ],
+    "impact": "Timestamps shift if the device time zone changes; local date filters use lexicographic string comparison.",
+    "actual_behavior": "Two serialisation paths.",
+    "expected_behavior": "One UTC-normalised representation.",
+    "validation": "Static.",
+    "recommended_fix": "Store UTC (or epoch ms) locally.",
+    "documentation_impact": "docs/data/models.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C15",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Dedup can merge genuinely distinct payments",
+    "component": "DedupService",
+    "locations": [
+      "lib/services/dedup_service.dart:39,102-117"
+    ],
+    "evidence": [
+      "Body-hash fallback for ref-less messages; fuzzy tier treats an empty counterparty as compatible; same-day path ignores time"
+    ],
+    "impact": "Two identical small payments (same amount/day, unparsed counterparty) can collapse into one.",
+    "actual_behavior": "Possible false merges.",
+    "expected_behavior": "No false merges.",
+    "validation": "Static; not measured on device.",
+    "recommended_fix": "Require a discriminator (time, balance, ref) before merging.",
+    "documentation_impact": "docs/features/deduplication.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C16",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Sync integrity check has blind spots and swallows errors",
+    "component": "SyncService",
+    "locations": [
+      "lib/services/sync_service.dart:95-122"
+    ],
+    "evidence": [
+      "Count comparison masked by other devices' rows; only first/last ids probed; catch(_) returns 'ok'"
+    ],
+    "impact": "Remote data loss can go undetected.",
+    "actual_behavior": "Weak verification.",
+    "expected_behavior": "Robust verification.",
+    "validation": "Static.",
+    "recommended_fix": "Compare per-id checksums in pages; surface errors.",
+    "documentation_impact": "docs/features/sync.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C17",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Dead Postgres connection is cached forever; no timeout or retry",
+    "component": "RemoteDatabase",
+    "locations": [
+      "lib/database/remote_database.dart:14-40,171-175"
+    ],
+    "evidence": [
+      "_connection reused until close(); no reset on error"
+    ],
+    "impact": "After a server-side disconnect every sync fails until restart. (Settings showed 'Syncing…' with 'Not synced yet' right after launch on device; root cause not isolated.)",
+    "actual_behavior": "No recovery.",
+    "expected_behavior": "Reconnect with backoff.",
+    "validation": "Static; device observation inconclusive.",
+    "recommended_fix": "Reset _connection on error; add timeouts.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C18",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "MainActivity leaks receivers and orphans them on re-subscribe",
+    "component": "MainActivity",
+    "locations": [
+      "MainActivity.kt:63-117"
+    ],
+    "evidence": [
+      "Receivers unregistered only in onCancel; no onDestroy cleanup; second onListen overwrites the field"
+    ],
+    "impact": "IntentReceiverLeaked / duplicate deliveries.",
+    "actual_behavior": "Leak-prone.",
+    "expected_behavior": "Cleanup in cleanUpFlutterEngine/onDestroy.",
+    "validation": "Static.",
+    "recommended_fix": "Unregister in cleanUpFlutterEngine and before re-registering.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C19",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "SMS permission denial is reported as 'No new transactions found'",
+    "component": "SmsService / MainActivity",
+    "locations": [
+      "lib/services/sms_service.dart:22-24",
+      "MainActivity.kt:140-162"
+    ],
+    "evidence": [
+      "SecurityException → PlatformException → catch(_) → []"
+    ],
+    "impact": "Users cannot distinguish a permission problem from an empty inbox.",
+    "actual_behavior": "Silent.",
+    "expected_behavior": "Explicit permission error.",
+    "validation": "Static; on-device revoke test not run (device was in use).",
+    "recommended_fix": "Propagate a typed error.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C20",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Home widget shows stale figures with no staleness signal",
+    "component": "widget",
+    "locations": [
+      "SpendingWidgetProvider.kt:97-119,200-223",
+      "lib/providers/transaction_provider.dart:512-528"
+    ],
+    "evidence": [
+      "Data is pushed only while the Dart isolate runs; updatedAt stored but never rendered"
+    ],
+    "impact": "After a day without opening the app the widget presents old 'Last 24 hours' totals as current.",
+    "actual_behavior": "Stale.",
+    "expected_behavior": "Marked stale or refreshed.",
+    "validation": "Static. The 'can't load widget' error from commit db4fc0a was not reproduced (device in use).",
+    "recommended_fix": "Render updatedAt / hide when older than 24h.",
+    "documentation_impact": "docs/features/home-widget.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C21",
+    "category": "correctness",
+    "severity": "MEDIUM",
+    "confidence": "MEDIUM",
+    "title": "Notification allowlist misses installed payment apps and includes WhatsApp",
+    "component": "UpiNotificationListener",
+    "locations": [
+      "UpiNotificationListener.kt:15-38"
+    ],
+    "evidence": [
+      "Device: SBI (com.sbi.lotusintouch), super.money, Navi, PhonePe Business and Amazon are installed but not allowlisted",
+      "Three allowlisted ids look wrong (net.csam.hdfc, com.canaaborb, com.myairtel.myairtelapp) — not verified against the Play Store",
+      "com.whatsapp is allowlisted, so chat notifications enter the pipeline without the SMS-path isUpiRelated pre-gate"
+    ],
+    "impact": "Missed notification transactions; possible false transactions from chats.",
+    "actual_behavior": "Incomplete/over-broad list.",
+    "expected_behavior": "Accurate list.",
+    "validation": "Device package list; static.",
+    "recommended_fix": "Fix ids; drop WhatsApp or gate it on payment-specific text.",
+    "documentation_impact": "docs/android/native-layer.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C22",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "TransactionType/DebtDirection silently default unknown values",
+    "component": "models",
+    "locations": [
+      "lib/models/transaction_record.dart:181-186",
+      "lib/models/debt_entry.dart:106-111"
+    ],
+    "evidence": [
+      "Unknown → debit / owedToMe"
+    ],
+    "impact": "Corrupt rows flip sign silently.",
+    "actual_behavior": "Silent default.",
+    "expected_behavior": "Error or explicit unknown.",
+    "validation": "Static.",
+    "recommended_fix": "Throw or log.",
+    "documentation_impact": "docs/data/models.md documents it.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C23",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "TransactionRecord.copyWith cannot clear nullable fields",
+    "component": "models",
+    "locations": [
+      "lib/models/transaction_record.dart:124-128"
+    ],
+    "evidence": [
+      "`note ?? this.note`"
+    ],
+    "impact": "A note cannot be cleared to null (empty string works).",
+    "actual_behavior": "Cannot null.",
+    "expected_behavior": "Clearable.",
+    "validation": "Static.",
+    "recommended_fix": "Same pattern as C10.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "C24",
+    "category": "correctness",
+    "severity": "LOW",
+    "confidence": "HIGH",
+    "title": "Labelled sparkline bars overflow the dashboard card",
+    "component": "DashboardScreen (staged change)",
+    "locations": [
+      "lib/screens/dashboard_screen.dart (_Bar.build)"
+    ],
+    "evidence": [
+      "The tallest bar takes the full 56 px LayoutBuilder height and the amount label is stacked above it in a Column"
+    ],
+    "impact": "Debug builds show an overflow stripe and release builds clip the bar whenever the week has spending.",
+    "actual_behavior": "Overflow.",
+    "expected_behavior": "Bar plus label fit the fixed height.",
+    "validation": "Layout arithmetic; not yet observed on device (no spending in the current window).",
+    "recommended_fix": "APPLIED: reserve a fixed 12 px label slot and size bars from the remaining height.",
+    "documentation_impact": "None.",
+    "status": "FIXED"
+  },
+  {
+    "id": "M1",
+    "category": "ml",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Spam model is trained mostly on an unrelated SMS-chat corpus",
+    "component": "training",
+    "locations": [
+      "scripts/train_all_models.py:90-110",
+      "assets/spam_model.json (vocab)"
+    ],
+    "evidence": [
+      "Vocabulary dominated by Singlish chat tokens from the 5,572-row Kaggle set; real UPI data is 382 rows",
+      "On the owner's inbox a legitimate Indian Bank UPI Lite template scores exactly the 0.85 threshold"
+    ],
+    "impact": "Fragile on real bank formats; correctness depends on the high threshold.",
+    "actual_behavior": "Domain mismatch.",
+    "expected_behavior": "In-domain training data.",
+    "validation": "Vocab inspection + inbox sweep.",
+    "recommended_fix": "Retrain with more Indian bank/UPI data (synthetic or consented), re-validate on real inboxes.",
+    "documentation_impact": "docs/ml-training.md.",
+    "status": "OPEN — modelling decision"
+  },
+  {
+    "id": "M2",
+    "category": "ml",
+    "severity": "LOW",
+    "confidence": "MEDIUM",
+    "title": "Notification text is scored by SMS-trained models",
+    "component": "ML pipeline",
+    "locations": [
+      "lib/providers/transaction_provider.dart:162"
+    ],
+    "evidence": [
+      "evaluate('$title $text') on app notifications; training data is SMS only"
+    ],
+    "impact": "Out-of-distribution scoring; unvalidated (zero notification transactions ever captured on device).",
+    "actual_behavior": "Unvalidated.",
+    "expected_behavior": "Validated or separate thresholds.",
+    "validation": "Static + device DB.",
+    "recommended_fix": "Collect consented notification samples and evaluate.",
+    "documentation_impact": "docs/features/ml-pipeline.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "M3",
+    "category": "ml",
+    "severity": "INFO",
+    "confidence": "CONFIRMED",
+    "title": "Empty input scores 0.0 where sklearn gives sigmoid(bias)",
+    "component": "TfidfLogReg",
+    "locations": [
+      "lib/services/ml/tfidf_logreg.dart:94",
+      "scripts/ml_core.py:369"
+    ],
+    "evidence": [
+      "Deliberate shared guard; unreachable in practice"
+    ],
+    "impact": "None in practice.",
+    "actual_behavior": "Guard.",
+    "expected_behavior": "—",
+    "validation": "Static.",
+    "recommended_fix": "None; documented.",
+    "documentation_impact": "docs/features/ml-pipeline.md.",
+    "status": "ACCEPTED"
+  },
+  {
+    "id": "M4",
+    "category": "ml",
+    "severity": "INFO",
+    "confidence": "CONFIRMED",
+    "title": "Dart inference is numerically identical to sklearn (negative finding)",
+    "component": "TfidfLogReg",
+    "locations": [
+      "lib/services/ml/tfidf_logreg.dart:91-124"
+    ],
+    "evidence": [
+      "Fixtures regenerated from sklearn's own TfidfVectorizer.transform differ from the previous ones by at most 2.2e-16"
+    ],
+    "impact": "The models themselves are not 'broken'.",
+    "actual_behavior": "Correct.",
+    "expected_behavior": "Correct.",
+    "validation": "sklearn reference scoring.",
+    "recommended_fix": "Do not change the inference maths.",
+    "documentation_impact": "None.",
+    "status": "VERIFIED"
+  },
+  {
+    "id": "T1",
+    "category": "test",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Production model-load path had no test coverage",
+    "component": "tests",
+    "locations": [
+      "test/services/ml/*"
+    ],
+    "evidence": [
+      "Every test used loadFromJsonStringForTest via dart:io; TfidfLogReg.load()/rootBundle never called"
+    ],
+    "impact": "Asset declaration or load regressions are invisible.",
+    "actual_behavior": "Untested.",
+    "expected_behavior": "Tested.",
+    "validation": "grep of test/.",
+    "recommended_fix": "APPLIED: test/services/ml/model_asset_loading_test.dart (proven to fail when an asset declaration is removed).",
+    "documentation_impact": "docs/testing.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "T2",
+    "category": "test",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Parity fixtures were circular (Dart vs a Python copy of Dart)",
+    "component": "scripts",
+    "locations": [
+      "scripts/generate_ml_fixtures.py:36",
+      "scripts/ml_core.py:358-399"
+    ],
+    "evidence": [
+      "Expected probabilities came from score_manual"
+    ],
+    "impact": "Shared drift from sklearn would pass.",
+    "actual_behavior": "Circular.",
+    "expected_behavior": "Reference = sklearn.",
+    "validation": "Code review.",
+    "recommended_fix": "APPLIED: score_sklearn reference; generator fails if score_manual drifts by more than 1e-6.",
+    "documentation_impact": "docs/testing.md, docs/ml-training.md.",
+    "status": "FIXED"
+  },
+  {
+    "id": "T3",
+    "category": "test",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Database tests exercise a hand-copied class, not LocalDatabase",
+    "component": "tests",
+    "locations": [
+      "test/database/local_database_test.dart:8"
+    ],
+    "evidence": [
+      "TestableLocalDatabase duplicates schema and queries"
+    ],
+    "impact": "Production query changes are untested (e.g. the new getTransactionCount range).",
+    "actual_behavior": "Copy drift.",
+    "expected_behavior": "Test the real class against FFI SQLite.",
+    "validation": "Code review.",
+    "recommended_fix": "Inject the DatabaseFactory into LocalDatabase and test it directly.",
+    "documentation_impact": "docs/testing.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "T4",
+    "category": "test",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "No CI; strictest accuracy suites only run where gitignored data exists",
+    "component": "repo",
+    "locations": [
+      "(no .github/)",
+      "test/accuracy/*"
+    ],
+    "evidence": [
+      "Accuracy suites markTestSkipped without data/*.csv"
+    ],
+    "impact": "Regressions land unnoticed.",
+    "actual_behavior": "Manual only.",
+    "expected_behavior": "CI on every push with synthetic accuracy corpus.",
+    "validation": "Repo inspection.",
+    "recommended_fix": "Add CI (analyze + test).",
+    "documentation_impact": "docs/testing.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "T5",
+    "category": "test",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Ingestion orchestration and Kotlin layer are untested",
+    "component": "tests",
+    "locations": [
+      "lib/providers/transaction_provider.dart",
+      "android/app/src/main/kotlin/**"
+    ],
+    "evidence": [
+      "Only copied query logic of the provider is tested; no Kotlin tests"
+    ],
+    "impact": "C1, C7, C8 class defects are invisible to the suite.",
+    "actual_behavior": "Untested.",
+    "expected_behavior": "Covered.",
+    "validation": "Repo inspection.",
+    "recommended_fix": "Extract ingestion into a testable service with injected channels.",
+    "documentation_impact": "docs/testing.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "T6",
+    "category": "test",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Duplicate parser test file",
+    "component": "tests",
+    "locations": [
+      "test/upi_parser_test.dart"
+    ],
+    "evidence": [
+      "Fully overlaps test/services/upi_parser_test.dart"
+    ],
+    "impact": "Maintenance cost.",
+    "actual_behavior": "Duplicate.",
+    "expected_behavior": "One suite.",
+    "validation": "Docs say so.",
+    "recommended_fix": "Delete the root-level copy.",
+    "documentation_impact": "docs/testing.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "A1",
+    "category": "architecture",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "TransactionProvider is a god object with duplicated ingestion code",
+    "component": "TransactionProvider",
+    "locations": [
+      "lib/providers/transaction_provider.dart"
+    ],
+    "evidence": [
+      "Owns capture, ML gating, parsing, dedup, persistence, location, sync, widget push and UI state; record construction duplicated between live and history paths"
+    ],
+    "impact": "Hard to test (T5) and easy to diverge (location only on one path).",
+    "actual_behavior": "Monolith.",
+    "expected_behavior": "Separate ingestion service.",
+    "validation": "Code review.",
+    "recommended_fix": "Extract an IngestionService.",
+    "documentation_impact": "docs/architecture.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "A2",
+    "category": "architecture",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Kotlin sources live under com/example/receipt but declare package com.upitracker.app",
+    "component": "android",
+    "locations": [
+      "android/app/src/main/kotlin/com/example/receipt/*.kt"
+    ],
+    "evidence": [
+      "Commit 8475ac2 changed package statements, namespace and applicationId but not the directory"
+    ],
+    "impact": "Cosmetic; misleading paths in docs.",
+    "actual_behavior": "Mismatch.",
+    "expected_behavior": "Directory matches package.",
+    "validation": "Build verified.",
+    "recommended_fix": "git mv to com/upitracker/app.",
+    "documentation_impact": "docs/android/*.",
+    "status": "OPEN"
+  },
+  {
+    "id": "A3",
+    "category": "architecture",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Status/success messages are carried in the `error` field",
+    "component": "TransactionProvider",
+    "locations": [
+      "lib/providers/transaction_provider.dart:331-337"
+    ],
+    "evidence": [
+      "'Found N new transactions' assigned to _error"
+    ],
+    "impact": "Confusing API.",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "Code review.",
+    "recommended_fix": "Separate status field.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "O1",
+    "category": "configuration",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "A stale pre-rename build is still installed and capturing on the owner's device",
+    "component": "device",
+    "locations": [
+      "com.example.receipt (installed 2026-04-19)"
+    ],
+    "evidence": [
+      "Holds READ_SMS/RECEIVE_SMS, notification-listener access and ALLOW_BACKUP; runs the old code with S3/S4 leaks"
+    ],
+    "impact": "Duplicate capture, old vulnerable code active, possible confusion about which app is current.",
+    "actual_behavior": "Two apps.",
+    "expected_behavior": "One app.",
+    "validation": "adb dumpsys / settings.",
+    "recommended_fix": "Uninstall com.example.receipt (owner action).",
+    "documentation_impact": "README upgrade note.",
+    "status": "OPEN — owner action"
+  },
+  {
+    "id": "O2",
+    "category": "configuration",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "No code shrinking/obfuscation and unpinned targetSdk",
+    "component": "android build",
+    "locations": [
+      "android/app/build.gradle.kts"
+    ],
+    "evidence": [
+      "No isMinifyEnabled; targetSdk = flutter.targetSdkVersion (36 with Flutter 3.41.6)"
+    ],
+    "impact": "Larger attack surface; target SDK changes silently with Flutter upgrades.",
+    "actual_behavior": "—",
+    "expected_behavior": "Explicit.",
+    "validation": "Static.",
+    "recommended_fix": "Enable R8 for release; pin targetSdk.",
+    "documentation_impact": "docs/android/native-layer.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "D1",
+    "category": "dependency",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Python training environment is not reproducible",
+    "component": "scripts",
+    "locations": [
+      "scripts/*.py",
+      "(no requirements.txt / pyproject)"
+    ],
+    "evidence": [
+      "Local .venv-ml has scikit-learn 1.9.0, numpy 2.5.1; nothing pinned in the repo"
+    ],
+    "impact": "Retraining may silently produce different models.",
+    "actual_behavior": "Unpinned.",
+    "expected_behavior": "Pinned.",
+    "validation": "Repo inspection.",
+    "recommended_fix": "Add requirements.txt with pinned versions.",
+    "documentation_impact": "docs/ml-training.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "D2",
+    "category": "dependency",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Direct Dart dependencies behind latest, incl. the database driver",
+    "component": "pubspec",
+    "locations": [
+      "pubspec.yaml",
+      "pubspec.lock"
+    ],
+    "evidence": [
+      "`flutter pub outdated`: postgres 3.5.9 → 3.5.19 (resolvable), permission_handler 11 → 13, geolocator 13 → 14, flutter_dotenv 5 → 6; 74 packages total have newer versions"
+    ],
+    "impact": "Missed fixes; no specific CVE was verified (no vulnerability database was available in this environment).",
+    "actual_behavior": "Behind.",
+    "expected_behavior": "Current.",
+    "validation": "pub outdated.",
+    "recommended_fix": "Upgrade postgres within constraints first; schedule majors.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "DOC1",
+    "category": "documentation",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "README claims sync is 'bidirectional-safe'",
+    "component": "README",
+    "locations": [
+      "README.md:27-29",
+      "README.md:214"
+    ],
+    "evidence": [
+      "Sync is push-only (docs/features/sync.md is correct)"
+    ],
+    "impact": "Readers assume remote→local recovery exists.",
+    "actual_behavior": "Push-only.",
+    "expected_behavior": "Doc states push-only.",
+    "validation": "Code trace.",
+    "recommended_fix": "Corrected.",
+    "documentation_impact": "DOCUMENTATION IS INCORRECT",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC2",
+    "category": "documentation",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "README describes the dedup key wrongly",
+    "component": "README",
+    "locations": [
+      "README.md:24-26"
+    ],
+    "evidence": [
+      "Key is md5 of txn id → ref → normalised body; amount/window/counterparty is the separate fuzzy tier"
+    ],
+    "impact": "Misleads maintainers.",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "Code trace.",
+    "recommended_fix": "Corrected.",
+    "documentation_impact": "DOCUMENTATION IS OUTDATED",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC3",
+    "category": "documentation",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "Docs asserted capture broadcasts were 'internal' when they were system-wide",
+    "component": "docs/android",
+    "locations": [
+      "docs/android/native-layer.md:38-39,59",
+      "docs/android/platform-channels.md:68-74"
+    ],
+    "evidence": [
+      "See S3"
+    ],
+    "impact": "A security property was documented that the code lacked.",
+    "actual_behavior": "Unscoped.",
+    "expected_behavior": "Scoped.",
+    "validation": "Code trace.",
+    "recommended_fix": "Code fixed so the docs are now accurate; wording made explicit.",
+    "documentation_impact": "IMPLEMENTATION DIFFERED FROM DOCUMENTATION",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC4",
+    "category": "documentation",
+    "severity": "HIGH",
+    "confidence": "CONFIRMED",
+    "title": "'Reads notifications and SMS in real time' — capture was off after every launch",
+    "component": "docs/README",
+    "locations": [
+      "docs/README.md:3-6",
+      "README.md (overview)"
+    ],
+    "evidence": [
+      "See C1"
+    ],
+    "impact": "Users and maintainers believe capture is automatic.",
+    "actual_behavior": "Manual per session.",
+    "expected_behavior": "Automatic.",
+    "validation": "Device.",
+    "recommended_fix": "Code fixed; docs describe persistence, catch-up and the remaining notification gap.",
+    "documentation_impact": "IMPLEMENTATION DIFFERED FROM DOCUMENTATION",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC5",
+    "category": "documentation",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "'100% of real UPI SMS ingested' holds only on the training corpus",
+    "component": "README / docs",
+    "locations": [
+      "README.md:131-141",
+      "docs/ml-training.md:109-111",
+      "docs/testing.md:91-95"
+    ],
+    "evidence": [
+      "See C2: 12 real transactions dropped on an independent real inbox before the fix"
+    ],
+    "impact": "Overstated guarantee.",
+    "actual_behavior": "Overclaim.",
+    "expected_behavior": "Qualified claim.",
+    "validation": "Inbox sweep.",
+    "recommended_fix": "Qualified in README.",
+    "documentation_impact": "DOCUMENTATION IS INCORRECT",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC6",
+    "category": "documentation",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Stale model sizes/feature counts",
+    "component": "README / docs",
+    "locations": [
+      "README.md:58,67",
+      "docs/features/ml-pipeline.md:4"
+    ],
+    "evidence": [
+      "direction model is 38.1 KB / 731 features (README: 33.7 KB / 641); payload ~350 KB (doc: 344 KB)"
+    ],
+    "impact": "—",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "File sizes and JSON.",
+    "recommended_fix": "Corrected.",
+    "documentation_impact": "DOCUMENTATION IS OUTDATED",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC7",
+    "category": "documentation",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Held-out metrics conflict between README and docs/ml-training.md",
+    "component": "README / docs",
+    "locations": [
+      "README.md:126-128,141",
+      "docs/ml-training.md:105-111"
+    ],
+    "evidence": [
+      "Spam recall 0.917 vs 0.921; direction precision 0.958 vs 0.980; min P(transactional) 0.571 vs 0.615; '382 SMS' vs '381/381'"
+    ],
+    "impact": "Unknown which numbers describe the shipped models.",
+    "actual_behavior": "Conflict.",
+    "expected_behavior": "One reproducible set.",
+    "validation": "Text comparison; not recomputed (would require retraining or rebuilding the exact split).",
+    "recommended_fix": "Marked for human decision; regenerate from a pinned training run.",
+    "documentation_impact": "BOTH REQUIRE CLARIFICATION",
+    "status": "OPEN — human decision"
+  },
+  {
+    "id": "DOC8",
+    "category": "documentation",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Training-mix and test-count details are wrong",
+    "component": "docs",
+    "locations": [
+      "docs/ml-training.md:33,60",
+      "docs/testing.md:3,113-114"
+    ],
+    "evidence": [
+      "SYNTHETIC_CREDITS is 20 (doc 21); CURATED_SPAM weighted ×2 (doc ×3); ~255 tests (actual 286 before this audit, 299 after); fixture counts 13/15/12 (actual 17/24/16)"
+    ],
+    "impact": "—",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "Code/fixture inspection.",
+    "recommended_fix": "Corrected.",
+    "documentation_impact": "DOCUMENTATION IS OUTDATED",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC9",
+    "category": "documentation",
+    "severity": "LOW",
+    "confidence": "CONFIRMED",
+    "title": "Unverifiable performance claim",
+    "component": "docs/features/ml-pipeline.md",
+    "locations": [
+      "docs/features/ml-pipeline.md:26-27"
+    ],
+    "evidence": [
+      "'~98% of decisions short-circuit at layer 1 (~5 µs/message)' — no benchmark exists; the inbox sweep shows most UPI messages pass all layers"
+    ],
+    "impact": "—",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "Inbox sweep.",
+    "recommended_fix": "Removed.",
+    "documentation_impact": "DOCUMENTATION IS AMBIGUOUS",
+    "status": "FIXED"
+  },
+  {
+    "id": "DOC10",
+    "category": "documentation",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Debt backup feature and its storage/permissions were undocumented",
+    "component": "docs",
+    "locations": [
+      "docs/features/debts.md",
+      "docs/setup.md"
+    ],
+    "evidence": [
+      "No mention of DebtBackupService, file location or permissions"
+    ],
+    "impact": "—",
+    "actual_behavior": "—",
+    "expected_behavior": "—",
+    "validation": "grep.",
+    "recommended_fix": "Documented.",
+    "documentation_impact": "IMPLEMENTATION HAS UNDOCUMENTED BEHAVIOR",
+    "status": "FIXED"
+  },
+  {
+    "id": "P1",
+    "category": "performance",
+    "severity": "MEDIUM",
+    "confidence": "CONFIRMED",
+    "title": "Every refresh loads the entire filtered transaction table",
+    "component": "LocalDatabase / TransactionProvider",
+    "locations": [
+      "lib/database/local_database.dart:133-178",
+      "lib/providers/transaction_provider.dart:343-357"
+    ],
+    "evidence": [
+      "getAllTransactions is called without limit/offset after every insert, filter change and summary reload"
+    ],
+    "impact": "Linear growth of memory and refresh time with history size (each row carries raw SMS text).",
+    "actual_behavior": "Unbounded.",
+    "expected_behavior": "Paged.",
+    "validation": "Static.",
+    "recommended_fix": "Paginate the list; load summaries via SQL only.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "P2",
+    "category": "performance",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "SMS history is read on the platform main thread",
+    "component": "MainActivity",
+    "locations": [
+      "MainActivity.kt:45,128-164"
+    ],
+    "evidence": [
+      "ContentResolver cursor loop runs synchronously inside the method-call handler (up to 500 rows)"
+    ],
+    "impact": "UI jank/ANR risk during scans, now also during startup catch-up (bounded by the watermark).",
+    "actual_behavior": "Main thread.",
+    "expected_behavior": "Background thread.",
+    "validation": "Static; not profiled.",
+    "recommended_fix": "Run the query on a background executor and post the result.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "P3",
+    "category": "performance",
+    "severity": "LOW",
+    "confidence": "HIGH",
+    "title": "Fuzzy dedup re-parses every candidate's raw text per incoming message",
+    "component": "DedupService",
+    "locations": [
+      "lib/services/dedup_service.dart:48-81"
+    ],
+    "evidence": [
+      "UpiParser.parseSms on each candidate row; no index on (amount, transaction_type)"
+    ],
+    "impact": "O(candidates) regex work per message on the UI isolate.",
+    "actual_behavior": "—",
+    "expected_behavior": "Store parsed discriminators.",
+    "validation": "Static.",
+    "recommended_fix": "Persist balance/embedded time columns; add index.",
+    "documentation_impact": "None.",
+    "status": "OPEN"
+  },
+  {
+    "id": "P4",
+    "category": "performance",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Location lookup blocks live ingestion for up to 10 seconds",
+    "component": "TransactionProvider / LocationService",
+    "locations": [
+      "lib/providers/transaction_provider.dart:231-234",
+      "lib/services/location_service.dart:36-39"
+    ],
+    "evidence": [
+      "getCurrentLocation awaited inline with a 10 s timeLimit before insert"
+    ],
+    "impact": "Captured transactions appear late; may prompt for permission from a background event.",
+    "actual_behavior": "Blocking.",
+    "expected_behavior": "Insert first, enrich later.",
+    "validation": "Static.",
+    "recommended_fix": "Insert immediately and attach location asynchronously.",
+    "documentation_impact": "docs/features/location-tagging.md.",
+    "status": "OPEN"
+  },
+  {
+    "id": "P5",
+    "category": "performance",
+    "severity": "MEDIUM",
+    "confidence": "HIGH",
+    "title": "Sync uploads row by row with no batching or transaction; full re-push after integrity miss",
+    "component": "RemoteDatabase / SyncService",
+    "locations": [
+      "lib/database/remote_database.dart:108-153",
+      "lib/services/sync_service.dart:95-122",
+      "lib/database/local_database.dart:207-215,329-332"
+    ],
+    "evidence": [
+      "One round trip per row; markAllUnsynced re-uploads the whole table; getUnsyncedTransactions has no LIMIT"
+    ],
+    "impact": "Slow, battery-heavy sync and partial remote writes on failure.",
+    "actual_behavior": "—",
+    "expected_behavior": "Batched, paged, transactional.",
+    "validation": "Static.",
+    "recommended_fix": "Batch inserts in a transaction, page uploads.",
+    "documentation_impact": "docs/features/sync.md.",
+    "status": "OPEN"
+  }
+]
