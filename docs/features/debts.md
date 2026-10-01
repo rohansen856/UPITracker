@@ -67,3 +67,23 @@ totals header (net amount + "Owes me"/"I owe" mini-stats), pull-to-refresh, and 
 - **`_DebtFormSheet`** — direction `SegmentedButton` ("They owe me" / "I owe"),
   required person + amount (> 0), optional reason/note, due-date picker (2 years back
   to 5 years ahead) with inline clear, plus Delete in edit mode.
+
+## JSON backup
+
+`DebtBackupService` (`lib/services/debt_backup_service.dart`) exports every entry to
+`UPITracker/debts_ledger.json` as pretty-printed JSON
+`{version: 1, exported_at, debts: [DebtEntry.toMap()…]}`.
+
+- **Location:** on Android the app-specific external directory
+  (`getExternalStorageDirectory()` → `Android/data/com.upitracker.app/files/`); elsewhere
+  the app documents directory. No storage permission is needed and other apps cannot read
+  it. The file is **plaintext** and is **deleted when the app is uninstalled** — copy it
+  elsewhere to keep it.
+- **Export** — the download icon in the Debts app bar. Write failures surface as a
+  snackbar (`DebtBackupException`).
+- **Restore** — when the backup contains ids missing locally, the Debts screen shows a
+  restore banner. `DebtProvider.restoreFromBackup()` upserts by id: unknown ids are
+  inserted, existing ids are **overwritten by the backup version** without comparing
+  `updated_at`. Entries are written one by one (no transaction).
+- A backup that exists but cannot be parsed raises `DebtBackupException` ("Backup file is
+  unreadable") instead of being treated as "no backup".

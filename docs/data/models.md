@@ -67,8 +67,9 @@ record; settled entries remain as history.
 | `updatedAt` | `DateTime` | |
 
 All fields are final; `copyWith` allows replacing everything except `id`/`createdAt`.
-**Quirk:** `copyWith` uses `?? this.settledAt`, so `settledAt` cannot be cleared —
-un-settling leaves the old timestamp behind (the `settled` flag itself is corrected).
+`copyWith` treats `settledAt: null` as "keep the current value"; pass
+`clearSettledAt: true` to remove it. `DebtProvider.toggleSettled` does this when
+un-settling, so `settled = 0` rows no longer keep a stale `settled_at`.
 
 Serialization mirrors `TransactionRecord` (snake_case, ISO-8601, `settled` as 1/0;
 `fromMap` treats null as 0).
