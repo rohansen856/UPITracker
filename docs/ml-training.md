@@ -30,7 +30,7 @@ without the datasets.
   **rightmost comma** (message bodies contain unquoted commas, so new rows can be
   curated without escaping); derives direction from "debited"/"credited" keywords.
 - Curated augmentation lists (version-controlled in code since the real data isn't):
-  - `SYNTHETIC_DEBITS` (28) / `SYNTHETIC_CREDITS` (21) — HDFC, ICICI, Axis, Kotak,
+  - `SYNTHETIC_DEBITS` (28) / `SYNTHETIC_CREDITS` (20) — HDFC, ICICI, Axis, Kotak,
     PNB, BoB, Canara, IOB, Federal, GPay, PhonePe, Paytm, BHIM, Amazon Pay, NEFT
     formats, **PhonePe wallet / gift-card confirmations** ("Not you? Call us …
     To top-up click <url>" — earlier models mistook these for spam and dropped real
@@ -57,17 +57,20 @@ Trains and exports all three models:
 
 | Model | Output | Threshold | Training mix |
 |---|---|---|---|
-| Spam filter | `assets/spam_model.json` | **0.85** (precision-biased) | Public spam corpora + real UPI ham ×3 + synthetic bank ham ×5 + non-transactional banking ham ×7 + `CURATED_SPAM` (18 scam/promo messages that mimic payment wording, incl. "You've earned …" coupon promos) ×3 |
+| Spam filter | `assets/spam_model.json` | **0.85** (precision-biased) | Public spam corpora + real UPI ham ×3 + synthetic bank ham ×5 + non-transactional banking ham ×7 + `CURATED_SPAM` (18 scam/promo messages that mimic payment wording, incl. "You've earned …" coupon promos) ×2 |
 | Transactional | `assets/transactional_model.json` | 0.5 | Positives: real + synthetic transactions. Negatives: non-transactional banking ×5, 800 conversational ham, 400 promo/spam |
 | Direction | `assets/direction_model.json` | 0.5 (`max_features=1500`; 731 survive `min_df`) | Label 1=credit, 0=debit; credits oversampled to balance |
 
 ## `generate_ml_fixtures.py` — parity fixtures
 
 Scores hardcoded case lists (`SPAM_CASES` 17, `TRANSACTIONAL_CASES` 24,
-`DIRECTION_CASES` 16) through `score_manual` against the exported models and writes
+`DIRECTION_CASES` 16) through `score_sklearn` (sklearn's own TF-IDF transform rebuilt
+from the exported vocab/idf) and cross-checks each against `score_manual` (aborting on
+drift > 1e-6), then writes
 `test/fixtures/{spam,transactional,direction}_fixtures.json` as
 `{"cases": [{text, label, probability}, …]}`. The Dart suites assert
-`|dart_prob − python_prob| < 1e-4` on every case. The script also prints any cases the
+`|dart_prob − sklearn_prob| < 1e-4` on every case. Requires `scikit-learn` and `numpy`
+(audited with 1.9.0 / 2.5.1; versions are not pinned in the repo). The script also prints any cases the
 model misclassifies at its own threshold.
 
 ## `seed_db.dart` — remote DB bootstrap
