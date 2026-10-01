@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../database/local_database.dart';
 import '../models/debt_entry.dart';
+import '../services/debt_backup_service.dart';
 
 /// Owns the list of borrow/lend entries and exposes the per-person totals
 /// consumed by [DebtsScreen].
@@ -136,6 +137,24 @@ class DebtProvider extends ChangeNotifier {
   Future<void> remove(String id) async {
     await _db.deleteDebt(id);
     await load();
+  }
+
+  /// Merge entries from a backup file into the local DB (upsert by id).
+  Future<int> restoreFromBackup() async {
+    final backup = await DebtBackupService.readBackup();
+    if (backup == null || backup.isEmpty) return 0;
+    final existingIds = _debts.map((d) => d.id).toSet();
+    int added = 0;
+    for (final entry in backup) {
+      if (existingIds.contains(entry.id)) {
+        await _db.updateDebt(entry);
+      } else {
+        await _db.insertDebt(entry);
+        added++;
+      }
+    }
+    await load();
+    return added;
   }
 }
 

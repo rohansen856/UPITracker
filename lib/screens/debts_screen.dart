@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/debt_entry.dart';
 import '../providers/debt_provider.dart';
+import '../services/debt_backup_service.dart';
 import '../widgets/brand_logo.dart';
 
 /// Top-level screen for tracking money the user has lent or borrowed.
@@ -23,14 +24,61 @@ class DebtsScreen extends StatefulWidget {
 
 class _DebtsScreenState extends State<DebtsScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabs;
+  bool _showRestoreBanner = false;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DebtProvider>().load();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<DebtProvider>().load();
+      if (mounted) _checkForBackup();
     });
+  }
+
+  Future<void> _checkForBackup() async {
+    final hasBackup = await DebtBackupService.backupExists();
+    if (!hasBackup || !mounted) return;
+    final provider = context.read<DebtProvider>();
+    // Show banner if local DB is empty or backup has entries not in local.
+    final List<DebtEntry>? backup;
+    try {
+      backup = await DebtBackupService.readBackup();
+    } on DebtBackupException {
+      return; // reported when the user explicitly restores
+    }
+    if (backup == null || backup.isEmpty) return;
+    final localIds = provider.debts.map((d) => d.id).toSet();
+    final hasNew = backup.any((e) => !localIds.contains(e.id));
+    if (hasNew && mounted) setState(() => _showRestoreBanner = true);
+  }
+
+  Future<void> _exportDebts() async {
+    final provider = context.read<DebtProvider>();
+    String message;
+    try {
+      final path = await DebtBackupService.export(provider.debts);
+      message = 'Exported to $path';
+    } on DebtBackupException catch (e) {
+      message = e.message;
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _restoreDebts() async {
+    final provider = context.read<DebtProvider>();
+    String message;
+    try {
+      final added = await provider.restoreFromBackup();
+      message = 'Restored $added new entries from backup';
+    } on DebtBackupException catch (e) {
+      message = e.message;
+    }
+    if (!mounted) return;
+    setState(() => _showRestoreBanner = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -51,6 +99,13 @@ class _DebtsScreenState extends State<DebtsScreen> with SingleTickerProviderStat
         ),
         leadingWidth: 52,
         title: const Text('Debts & Lending'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export JSON backup',
+            onPressed: _exportDebts,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
@@ -69,6 +124,21 @@ class _DebtsScreenState extends State<DebtsScreen> with SingleTickerProviderStat
         onRefresh: provider.load,
         child: Column(
           children: [
+            if (_showRestoreBanner)
+              MaterialBanner(
+                content: const Text('Found a previous debts backup'),
+                leading: const Icon(Icons.restore),
+                actions: [
+                  TextButton(
+                    onPressed: () => setState(() => _showRestoreBanner = false),
+                    child: const Text('Dismiss'),
+                  ),
+                  FilledButton(
+                    onPressed: _restoreDebts,
+                    child: const Text('Restore'),
+                  ),
+                ],
+              ),
             _TotalsHeader(
               owedToMe: provider.totalOwedToMe,
               iOwe: provider.totalIOwe,
@@ -241,8 +311,7 @@ class _MiniStat extends StatelessWidget {
 // ─────────────────────────────── People list ────────────────────────────────
 
 class _PeopleList extends StatelessWidget {
-  /// When non-null, only entries matching this direction are considered when
-  /// building the per-person cards.
+  /// When non-null, show people who have any unsettled entry in this direction.
   final DebtDirection? filter;
   const _PeopleList({required this.filter});
 
@@ -253,8 +322,8 @@ class _PeopleList extends StatelessWidget {
 
     final balances = provider.peopleBalances.where((p) {
       if (filter == null) return true;
-      if (filter == DebtDirection.owedToMe) return p.netAmount > 0;
-      return p.netAmount < 0;
+      // Show person if they have any unsettled entry matching the tab direction.
+      return p.entries.any((e) => !e.settled && e.direction == filter);
     }).toList();
 
     if (provider.isLoading && provider.debts.isEmpty) {
@@ -292,22 +361,37 @@ class _PeopleList extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
       itemCount: balances.length,
-      itemBuilder: (context, i) => _PersonCard(balance: balances[i]),
+      itemBuilder: (context, i) => _PersonCard(balance: balances[i], directionFilter: filter),
     );
   }
 }
 
 class _PersonCard extends StatelessWidget {
   final PersonBalance balance;
-  const _PersonCard({required this.balance});
+  final DebtDirection? directionFilter;
+  const _PersonCard({required this.balance, this.directionFilter});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final fmt = NumberFormat('#,##,###.##');
-    final color = balance.theyOweMe ? AppTheme.creditColor : AppTheme.debitColor;
-    final icon = balance.theyOweMe ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
-    final sign = balance.theyOweMe ? '+' : '−';
+
+    // When showing a direction-filtered tab, display the gross sum for that direction.
+    final double displayAmount;
+    final bool showAsCredit;
+    if (directionFilter != null) {
+      displayAmount = balance.entries
+          .where((e) => !e.settled && e.direction == directionFilter)
+          .fold(0.0, (sum, e) => sum + e.amount);
+      showAsCredit = directionFilter == DebtDirection.owedToMe;
+    } else {
+      displayAmount = balance.netAmount.abs();
+      showAsCredit = balance.theyOweMe;
+    }
+
+    final color = showAsCredit ? AppTheme.creditColor : AppTheme.debitColor;
+    final icon = showAsCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+    final sign = showAsCredit ? '+' : '−';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -354,7 +438,7 @@ class _PersonCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '$sign₹${fmt.format(balance.netAmount.abs())}',
+                    '$sign₹${fmt.format(displayAmount)}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -367,7 +451,7 @@ class _PersonCard extends StatelessWidget {
                       Icon(icon, size: 11, color: color),
                       const SizedBox(width: 2),
                       Text(
-                        balance.theyOweMe ? 'owes you' : 'you owe',
+                        showAsCredit ? 'owes you' : 'you owe',
                         style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
                       ),
                     ],
