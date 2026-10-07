@@ -52,7 +52,7 @@ app.*.map.json
 
 # Training datasets — keep the folder in the repo (see data/.gitkeep) but
 # never commit the CSVs themselves (they contain real SMS / personal data).
-# Download the bundle from the URL in README.md.
+# Download them from the Google Drive link in README.md / data/README.md.
 data/*
 !data/.gitkeep
 !data/README.md

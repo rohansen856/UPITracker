@@ -7,11 +7,12 @@ account numbers.
 
 ## Get the bundle
 
-Download the zipped dataset bundle and extract it **into this folder**:
+Download the dataset files and put them **into this folder** (if you download
+the whole Drive folder as a zip, extract it here):
 
-- **Google Drive:** https://drive.google.com/drive/folders/REPLACE_WITH_YOUR_DRIVE_FOLDER_ID
+- **Google Drive:** https://drive.google.com/drive/folders/19AV_DytumoGD7GLs9f--FxPwHfm7nSax
 
-After extraction, running `ls data/` should show:
+Afterwards, running `ls data/` should show:
 
 ```
 README.md          <- this file, committed

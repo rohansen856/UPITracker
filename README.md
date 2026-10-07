@@ -162,10 +162,11 @@ only through `data/.gitkeep` and `data/README.md`. The CSVs are
 distributed separately because `upi*.csv` contains real SMS with personal
 data.
 
-**Download the bundle from Google Drive:**
-> https://drive.google.com/drive/folders/REPLACE_WITH_YOUR_DRIVE_FOLDER_ID
+**Download the datasets from Google Drive:**
+> https://drive.google.com/drive/folders/19AV_DytumoGD7GLs9f--FxPwHfm7nSax
 
-Extract every file **into `data/`** and you should end up with:
+Put every file **into `data/`** (if you download the whole folder as a zip,
+extract it there) and you should end up with:
 
 | File                        | Rows   | Label    | Notes                                                             |
 |-----------------------------|--------|----------|-------------------------------------------------------------------|
@@ -285,7 +286,7 @@ dart run scripts/seed_db.dart
 
 ### Retrain the ML stack
 
-Download the dataset bundle first (see [Datasets](#datasets)) and place
+Download the datasets first (see [Datasets](#datasets)) and place
 the CSVs under `data/`. Then:
 
 ```bash

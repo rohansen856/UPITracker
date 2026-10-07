@@ -87,8 +87,8 @@ the app's remote schema) plus indexes `idx_remote_dedup`, `idx_remote_date`,
 ## Datasets (`data/`)
 
 Gitignored (real personal SMS); tracked only through `data/.gitkeep` and
-[data/README.md](../data/README.md). Distributed as a Google Drive bundle (placeholder
-link in the READMEs).
+[data/README.md](../data/README.md). Download the files from Google Drive into `data/`:
+https://drive.google.com/drive/folders/19AV_DytumoGD7GLs9f--FxPwHfm7nSax
 
 | File | Rows | Labels |
 |---|---|---|

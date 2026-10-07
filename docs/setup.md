@@ -65,7 +65,7 @@ configurable tracking **Start Date**, which ignores anything older).
 
 ## Retrain the ML stack (optional)
 
-Download the dataset bundle into `data/` first (see
+Download the datasets into `data/` first (see
 [ml-training.md](ml-training.md#datasets-data)), then:
 
 ```bash
