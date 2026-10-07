@@ -11,7 +11,11 @@ class RemoteDatabase {
   bool _tableCreated = false;
 
   Future<Connection> _getConnection() async {
-    if (_connection != null) return _connection!;
+    // Neon's pooler closes idle connections. Reusing a closed one fails every
+    // later sync with "connection is not open" until the app restarts.
+    final existing = _connection;
+    if (existing != null && existing.isOpen) return existing;
+    _connection = null;
 
     final dbUrl = dotenv.env['DATABASE_URL'];
     if (dbUrl == null || dbUrl.isEmpty) {
@@ -28,7 +32,12 @@ class RemoteDatabase {
 
     _connection = await Connection.open(
       endpoint,
-      settings: ConnectionSettings(sslMode: SslMode.require),
+      settings: ConnectionSettings(
+        sslMode: SslMode.require,
+        // Without these a stalled network leaves sync "in progress" forever.
+        connectTimeout: const Duration(seconds: 15),
+        queryTimeout: const Duration(seconds: 30),
+      ),
     );
 
     if (!_tableCreated) {
