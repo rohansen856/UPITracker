@@ -129,3 +129,25 @@ See [REMEDIATION_PLAN.md](REMEDIATION_PLAN.md).
 - The C1 fix was installed on the device and verified by build and tests. The end-to-end
   run on the device (auto-start, catch-up, live SMS) is still pending phone time; see the
   status in [TEST_AUDIT.md](TEST_AUDIT.md).
+
+## Post-audit follow-ups (2026-10-07)
+
+Found or confirmed on the device after the audit pass; counts above are unchanged.
+
+- **C17 confirmed and fixed.** With a rotated database password, the first sync after launch
+  connected, but a manual sync three minutes later failed with "connection is not open":
+  Neon's pooler had closed the idle connection and `RemoteDatabase` kept reusing it. It now
+  reconnects when the cached connection is closed, with a 15 s connect timeout and a 30 s
+  query timeout.
+- **Settings showed "Syncing…" after syncs had finished.** Background (timer) syncs never
+  notified the UI. `SyncService` now reports start and finish to the provider.
+- **Root cause of "Can't load widget" found and fixed.** `spending_widget_layout.xml` used
+  three plain `<View>` spacers. `android.view.View` lacks the `@RemoteView` annotation
+  (checked in the API 36 SDK), so the launcher refuses to inflate the layout. The fallback
+  view uses the same layout, so it failed too. The spacers are now `<FrameLayout>`. Not yet
+  re-verified on the device: that needs a rebuild, which bundles the credential.
+- **C3 on device:** the history import recorded new UPI Lite top-ups as debits. Two older
+  rows from the July import remain recorded as credits (₹6,000) and need a one-off
+  correction.
+- **Datasets** are now published at the Drive link in `data/README.md`. That folder is
+  public and includes the `upi*.csv` files containing real SMS (see S11).
