@@ -41,8 +41,8 @@ therefore lets a message through regardless of the model scores when it has
   numbers never qualify. Notifications (no sender) qualify on text alone because they are
   already limited to the payment-app allowlist.
 
-Such decisions have `stage = 'passed'`, `reason = 'settlement-evidence'`. On the audit
-inbox (3,901 SMS) the rule recovered exactly the 12 dropped real transactions and changed
+Such decisions have `stage = 'passed'`, `reason = 'settlement-evidence'`. On a real
+inbox of 3,901 SMS the rule recovered exactly the 12 dropped real transactions and changed
 no other decision.
 
 ## `TfidfLogReg` (shared engine)

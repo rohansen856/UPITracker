@@ -134,12 +134,11 @@ python3 scripts/generate_ml_fixtures.py   # regenerate Dart parity fixtures
 
 Measured by `test/accuracy/corpus_accuracy_test.dart` and
 `test/accuracy/model_consistency_test.dart`. These figures are on the
-**training** corpus. On an independent real inbox (audit, 2026-10-06) the
-classifiers alone dropped two bank templates entirely (12 real
-transactions); the settlement-evidence rule in `MessagePipeline` now
-prevents that. The held-out numbers above and those in
-`docs/ml-training.md` disagree and need regenerating from a pinned run
-(see `AUDIT/DOCUMENTATION_AUDIT.md`, DOC7).
+**training** corpus. On an independent real inbox the classifiers alone
+dropped two bank templates entirely (12 real transactions); the
+settlement-evidence rule in `MessagePipeline` now prevents that. The
+held-out numbers above and those in `docs/ml-training.md` disagree and
+need regenerating from a pinned training run.
 
 | Metric                                                      | Value        |
 |-------------------------------------------------------------|--------------|

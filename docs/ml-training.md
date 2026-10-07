@@ -70,7 +70,7 @@ drift > 1e-6), then writes
 `test/fixtures/{spam,transactional,direction}_fixtures.json` as
 `{"cases": [{text, label, probability}, …]}`. The Dart suites assert
 `|dart_prob − sklearn_prob| < 1e-4` on every case. Requires `scikit-learn` and `numpy`
-(audited with 1.9.0 / 2.5.1; versions are not pinned in the repo). The script also prints any cases the
+(tested with 1.9.0 / 2.5.1; versions are not pinned in the repo). The script also prints any cases the
 model misclassifies at its own threshold.
 
 ## `seed_db.dart` — remote DB bootstrap
