@@ -123,6 +123,6 @@ mirror of the Dart engine) drifts from sklearn by more than 1e-6, and the Dart s
 assert < 1e-4 against sklearn — so drift on either side is caught. Empty preprocessed
 text is the one shared guard (0.0 on both sides).
 
-**Known gaps** (see `AUDIT/TEST_AUDIT.md`): `TransactionProvider` ingestion is not
+**Known gaps:** `TransactionProvider` ingestion is not
 tested directly; `local_database_test.dart` tests a copied `TestableLocalDatabase`
 rather than `LocalDatabase`; there are no Kotlin tests and no CI.

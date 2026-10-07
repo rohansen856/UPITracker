@@ -26,7 +26,7 @@ the **same** credential, which is packaged inside the APK (`.env` is a Flutter a
 and writes into **one shared `transactions` table with no user or device column**. Anyone
 holding an APK can read and modify every synced row, including raw SMS text and
 locations. Treat sync as unsafe for anything beyond a single trusted device until an
-authenticated API exists (see `AUDIT/SECURITY_AUDIT.md`, S1/S2).
+authenticated API exists.
 
 `startPeriodicSync()` (called from `TransactionProvider.initialize()`) runs an
 immediate `syncNow()` plus a `Timer.periodic`. `stopPeriodicSync()` cancels;

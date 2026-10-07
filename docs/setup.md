@@ -30,7 +30,7 @@ SYNC_INTERVAL_MINUTES=15
 in plaintext inside every APK** (`assets/flutter_assets/.env`). Anyone with the APK has
 full access to the shared remote database. Do not distribute builds with a real
 `DATABASE_URL`; set `SYNC_ENABLED=false` (or remove `.env` from `pubspec.yaml` assets) for
-any build that leaves your hands. See `AUDIT/SECURITY_AUDIT.md` (S1/S2).
+any build that leaves your hands.
 
 ## Install & run
 
