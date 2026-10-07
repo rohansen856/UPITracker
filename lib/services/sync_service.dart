@@ -16,7 +16,11 @@ class SyncService {
 
   bool get isSyncing => _isSyncing;
 
-  SyncService(this._localDb, this._remoteDb);
+  /// Called when a sync starts or finishes, including timer-driven ones, so
+  /// the UI does not keep showing "Syncing..." after a background sync.
+  final void Function()? onStateChanged;
+
+  SyncService(this._localDb, this._remoteDb, {this.onStateChanged});
 
   bool get isSyncEnabled => dotenv.env['SYNC_ENABLED']?.toLowerCase() == 'true';
 
@@ -51,6 +55,7 @@ class SyncService {
     if (!isSyncEnabled) return SyncResult(success: false, message: 'Sync disabled');
 
     _isSyncing = true;
+    onStateChanged?.call();
     try {
       if (!await _isOnline()) {
         return SyncResult(success: false, message: 'No internet connection');
@@ -87,6 +92,7 @@ class SyncService {
       return SyncResult(success: false, message: 'Sync failed: $e');
     } finally {
       _isSyncing = false;
+      onStateChanged?.call();
     }
   }
 

@@ -112,7 +112,7 @@ class TransactionProvider extends ChangeNotifier {
 
   TransactionProvider() {
     _dedupService = DedupService(_localDb);
-    _syncService = SyncService(_localDb, _remoteDb);
+    _syncService = SyncService(_localDb, _remoteDb, onStateChanged: notifyListeners);
   }
 
   Future<void> initialize() async {
