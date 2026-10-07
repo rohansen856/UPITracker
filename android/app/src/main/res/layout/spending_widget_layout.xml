@@ -29,7 +29,7 @@
             android:textColor="#5F6368"
             android:fontFamily="sans-serif-medium" />
 
-        <View
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
@@ -58,7 +58,7 @@
             android:fontFamily="sans-serif-medium"
             android:text="0" />
 
-        <View
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
@@ -102,7 +102,7 @@
             android:fontFamily="sans-serif-medium"
             android:text="0 in" />
 
-        <View
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
